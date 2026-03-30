@@ -1,0 +1,6 @@
+[server]
+headless = true
+
+[runner]
+# Adds project root to sys.path automatically on every run
+magicEnabled = false

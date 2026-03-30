@@ -1,0 +1,8 @@
+.env
+.env.local
+outputs/best_model.pth
+outputs/tabnet_model.zip
+# data/
+__pycache__/
+.venv/
+*.pyc
