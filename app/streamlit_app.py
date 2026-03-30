@@ -27,10 +27,8 @@ API_URL, API_SOURCE = Config.get_api_url()
 def render_api_status():
     if API_SOURCE == "render":
         st.sidebar.success(f"🟢 API: Render (Cloud)")
-        st.sidebar.caption(API_URL)
     else:
         st.sidebar.warning(f"🟡 API: Localhost (Dev)")
-        st.sidebar.caption(API_URL)
         st.sidebar.caption("Set RENDER_API_URL in .env for production")
 
 FEATURE_NAMES = [

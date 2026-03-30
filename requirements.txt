@@ -21,3 +21,5 @@ matplotlib
 
 # Kaggle (optional, for GMSC dataset)
 kaggle
+
+python-dotenv
