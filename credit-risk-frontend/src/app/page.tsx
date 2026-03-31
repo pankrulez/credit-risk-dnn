@@ -4,6 +4,7 @@ import { useState } from "react";
 import { predictRisk, PredictionResult } from "@/lib/api";
 import RiskMeter from "@/components/RiskMeter";
 import FeatureBar from "@/components/FeatureBar";
+import APIStatusBanner from "@/components/APIStatusBanner";
 
 const MEANS = [167484,1.6,1.85,1.55,35.5,-0.02,-0.13,-0.17,-0.22,-0.27,-0.29,
                49179,47013,43263,40311,38871,36949,5663,5921,5226,4826,4799,5215];
@@ -77,6 +78,11 @@ export default function Home() {
           <span className="inline-block mt-2 text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
             API: {process.env.NEXT_PUBLIC_API_URL}
           </span>
+        </div>
+
+        {/* API Status Banner */}
+        <div className="flex justify-center mb-6">
+          <APIStatusBanner />
         </div>
 
         <form onSubmit={handleSubmit}>

@@ -1,4 +1,5 @@
 import sys
+import re
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -7,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
 from typing import Optional
+from starlette.requests import Request
+from starlette.middleware.base import BaseHTTPMiddleware
 import numpy as np
 import torch
 
@@ -79,19 +82,45 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        Config.FRONTEND_URL,          # Vercel frontend URL from .env
-        "http://localhost:3000",       # Next.js dev server
-        "http://localhost:8501",       # Streamlit dev server
-        "https://*.vercel.app",        # all Vercel preview deployments
-        "https://*.hf.space",          # HuggingFace Spaces
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:8501",
+    "https://*.vercel.app",          # all Vercel preview + prod deployments
+    "https://*.hf.space",            # HuggingFace Spaces
+    os.getenv("FRONTEND_URL", ""),   # explicit Vercel URL from .env
+]
+
+VERCEL_PATTERN = re.compile(r"https://[\w-]+\.vercel\.app")
+HF_PATTERN     = re.compile(r"https://[\w-]+\.hf\.space")
+
+class DynamicCORSMiddleware(BaseHTTPMiddleware):
+    """Handles wildcard patterns for Vercel preview URLs."""
+    async def dispatch(self, request: Request, call_next):
+        origin   = request.headers.get("origin", "")
+        allowed  = (
+            origin in ALLOWED_ORIGINS
+            or bool(VERCEL_PATTERN.match(origin))
+            or bool(HF_PATTERN.match(origin))
+        )
+
+        if request.method == "OPTIONS":
+            # Handle CORS preflight
+            headers = {
+                "Access-Control-Allow-Origin":  origin if allowed else "",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Max-Age":       "86400",
+            }
+            from starlette.responses import Response
+            return Response(status_code=200, headers=headers)
+
+        response = await call_next(request)
+        if allowed:
+            response.headers["Access-Control-Allow-Origin"]  = origin
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return response
+    
+app.add_middleware(DynamicCORSMiddleware)
 
 
 # ── Schemas ────────────────────────────────────────────────────────────────────
