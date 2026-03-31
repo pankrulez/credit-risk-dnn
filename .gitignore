@@ -6,3 +6,4 @@ outputs/tabnet_model.zip
 __pycache__/
 .venv/
 *.pyc
+.env.production
