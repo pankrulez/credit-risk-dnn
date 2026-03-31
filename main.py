@@ -1,5 +1,6 @@
 import argparse
 import os
+import pickle
 import torch
 
 os.makedirs('outputs', exist_ok=True)
@@ -44,7 +45,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_dnn(args, loaders, X_test, y_test, feature_names, X_train, device):
+def run_dnn(args, loaders, X_test, y_test, feature_names, X_train, device, scaler):
     model = CreditRiskDNN(
         n_features=len(feature_names),
         dropout=0.3
@@ -56,6 +57,11 @@ def run_dnn(args, loaders, X_test, y_test, feature_names, X_train, device):
         lr=args.lr,
         device=device
     )
+    
+    with open("outputs/scaler.pkl", "wb") as f:
+        pickle.dump(scaler, f)
+        print("✅ Scaler saved to outputs/scaler.pkl")
+
     evaluate_model(model, loaders['test'], device=device)
 
     if args.shap:
@@ -105,14 +111,21 @@ def main():
     print(f"⚙️  Model    : {args.model}")
     print(f"⚙️  Dataset  : {args.dataset}")
 
-    # ── Load data ────────────────────────────────────────────
+    # ── Load data ─────────────────────────────────────────────────────────────
     loaders, X_test, y_test, scaler, feature_names, X_train, X_val, y_val = \
         load_and_preprocess(dataset=args.dataset)
 
-    # ── Train ─────────────────────────────────────────────────
+    # ── Save scaler immediately after loading ─────────────────────────────────
+    import pickle
+    os.makedirs('outputs', exist_ok=True)
+    with open('outputs/scaler.pkl', 'wb') as f:
+        pickle.dump(scaler, f)
+    print("✅ Scaler saved to outputs/scaler.pkl")
+
+    # ── Train ─────────────────────────────────────────────────────────────────
     if args.model == 'dnn':
         trained_model = run_dnn(
-            args, loaders, X_test, y_test, feature_names, X_train, device
+            args, loaders, X_test, y_test, feature_names, X_train, device, scaler
         )
         model_type = 'dnn'
     else:
@@ -121,7 +134,7 @@ def main():
         )
         model_type = 'tabnet'
 
-    # ── Fairness audit ───────────────────────────────────────
+    # ── Fairness audit ────────────────────────────────────────────────────────
     if args.fairness:
         print("\n⚖️  Running Fairness Audit...")
         run_fairness_audit(
