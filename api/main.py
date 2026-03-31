@@ -208,7 +208,7 @@ def predict(payload: ApplicantFeatures):
         logger.info(f"Prediction: {prob:.4f}")
 
         # Attention-based top features
-        attn     = attn_weights.squeeze().numpy()
+        attn     = attn_weights.squeeze().tolist()
         top5_idx = attn.argsort()[-5:][::-1]
         top_feats = {
             DEFAULT_CREDIT_FEATURES[i]: round(float(attn[i]), 4)
@@ -249,7 +249,7 @@ def predict_batch(payload: BatchRequest):
 
         with torch.no_grad():
             logits, _ = model(X)
-            probs = torch.sigmoid(logits).cpu().numpy()
+            probs = torch.sigmoid(logits).cpu().tolist()
 
         results = []
         for i, (prob, applicant) in enumerate(zip(probs, payload.applicants)):
@@ -268,7 +268,6 @@ def predict_batch(payload: BatchRequest):
     
 @app.get("/predict/test", tags=["Debug"])
 def predict_test():
-    """Fires a dummy prediction to verify model inference works end-to-end."""
     try:
         model = model_store.get("dnn")
         if model is None:
@@ -277,14 +276,15 @@ def predict_test():
         dummy = torch.zeros(1, N_FEATURES)
         with torch.no_grad():
             logit, attn = model(dummy)
-            prob = torch.sigmoid(logit).item()
+            prob  = torch.sigmoid(logit).item()
+            attn_list = attn.squeeze().tolist()   # ✅ .tolist()
 
         return {
             "status":       "ok",
             "test_prob":    round(prob, 4),
             "n_features":   N_FEATURES,
             "model_loaded": True,
-            "attn_shape":   list(attn.shape),
+            "attn_length":  len(attn_list) if isinstance(attn_list, list) else 1,
         }
     except Exception as e:
         return {"status": "error", "detail": str(e), "trace": traceback.format_exc()}
