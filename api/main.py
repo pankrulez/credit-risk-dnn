@@ -1,6 +1,8 @@
 import sys
 import re
 import os
+import traceback
+import logging
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from fastapi import FastAPI, HTTPException
@@ -15,6 +17,9 @@ import torch
 
 from src.model import CreditRiskDNN
 from src.config import Config
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # ── Feature schema for Taiwan Default Credit dataset (30K rows) ───────────────
 DEFAULT_CREDIT_FEATURES = [
@@ -186,11 +191,21 @@ def predict(payload: ApplicantFeatures):
     """Single applicant credit risk prediction."""
     try:
         model = model_store['dnn']
+        if model is None:
+            raise RuntimeError("Model not loaded. Check startup logs.")
+        
+        logger.info(f"Received features count: {len(payload.features)}")
+        logger.info(f"Threshold: {payload.threshold}")
+        logger.info(f"Features sample (first 5): {payload.features[:5]}")
+        
         X = torch.tensor([payload.features], dtype=torch.float32)
+        logger.info(f"Tensor shape: {X.shape}")
 
         with torch.no_grad():
             logit, attn_weights = model(X)
             prob = torch.sigmoid(logit).item()
+            
+        logger.info(f"Prediction: {prob:.4f}")
 
         # Attention-based top features
         attn     = attn_weights.squeeze().numpy()
@@ -213,6 +228,9 @@ def predict(payload: ApplicantFeatures):
             model_version          = "DNN-v1.0-DefaultCredit"
         )
     except Exception as e:
+        logger.error(f"Prediction failed: {e}")
+        logger.error(traceback.format_exc())
+        
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -246,3 +264,27 @@ def predict_batch(payload: BatchRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    
+@app.get("/predict/test", tags=["Debug"])
+def predict_test():
+    """Fires a dummy prediction to verify model inference works end-to-end."""
+    try:
+        model = model_store.get("dnn")
+        if model is None:
+            return {"status": "error", "detail": "Model not in model_store"}
+
+        dummy = torch.zeros(1, N_FEATURES)
+        with torch.no_grad():
+            logit, attn = model(dummy)
+            prob = torch.sigmoid(logit).item()
+
+        return {
+            "status":       "ok",
+            "test_prob":    round(prob, 4),
+            "n_features":   N_FEATURES,
+            "model_loaded": True,
+            "attn_shape":   list(attn.shape),
+        }
+    except Exception as e:
+        return {"status": "error", "detail": str(e), "trace": traceback.format_exc()}
