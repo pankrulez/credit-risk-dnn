@@ -1,34 +1,38 @@
 version: "3.9"
 
 services:
-
   api:
     build: .
     container_name: credit_risk_api
-    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
-    volumes:
-      - ./outputs:/app/outputs   # persist model weights
     environment:
+      - PORT=8000                     # override for local dev
       - PYTHONUNBUFFERED=1
+      - APP_ENV=development
+    volumes:
+      - ./outputs:/app/outputs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 15s              # give model time to load before first check
 
   streamlit:
     build: .
     container_name: credit_risk_ui
-    command: streamlit run app/streamlit_app.py --server.port 8501 --server.address 0.0.0.0
+    entrypoint: ["streamlit", "run", "app/streamlit_app.py",
+                 "--server.port", "8501", "--server.address", "0.0.0.0"]
     ports:
       - "8501:8501"
+    environment:
+      - RENDER_API_URL=http://api:8000
+      - PORT=8501
     volumes:
       - ./outputs:/app/outputs
-    environment:
-      - API_URL=http://api:8000   # internal docker network
     depends_on:
-      - api
+      api:
+        condition: service_healthy   # waits for API healthcheck to pass
     restart: unless-stopped
