@@ -1,27 +1,67 @@
-name: Build & Deploy
+name: Deploy
 
 on:
   push:
     branches: [main]
 
 jobs:
-  build-and-push:
+  # ── Job 1: Trigger Render redeploy ──────────────────────────────────────────
+  deploy-render:
+    name: Redeploy Render API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy Hook
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}")
+          echo "Render deploy hook status: $STATUS"
+          if [ "$STATUS" != "200" ] && [ "$STATUS" != "201" ]; then
+            echo "⚠️ Render deploy hook returned $STATUS"
+            exit 1
+          fi
+          echo "✅ Render redeploy triggered"
+
+  # ── Job 2: Upload artifacts to HuggingFace Hub ──────────────────────────────
+  deploy-hf:
+    name: Upload Artifacts to HuggingFace Hub
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          python-version: "3.11"
 
-      - name: Build & Push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/credit-risk-dnn:latest
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
 
-      - name: Trigger Render Deploy
+      - name: Upload model artifacts
+        env:
+          HF_TOKEN:      ${{ secrets.HF_TOKEN }}
+          HF_MODEL_REPO: ${{ secrets.HF_MODEL_REPO }}
         run: |
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          python - <<'EOF'
+          import os
+          from huggingface_hub import HfApi
+
+          api     = HfApi()
+          repo_id = os.environ["HF_MODEL_REPO"]
+          token   = os.environ["HF_TOKEN"]
+
+          for path in ["outputs/best_model.pth", "outputs/scaler.pkl"]:
+              if not os.path.exists(path):
+                  print(f"⚠️  Skipping {path} — not in repo")
+                  continue
+              filename = os.path.basename(path)
+              print(f"📤 Uploading {filename}...")
+              api.upload_file(
+                  path_or_fileobj = path,
+                  path_in_repo    = filename,
+                  repo_id         = repo_id,
+                  repo_type       = "model",
+                  token           = token,
+                  commit_message  = f"ci: update {filename}",
+              )
+              print(f"✅ Uploaded {filename}")
+          EOF
