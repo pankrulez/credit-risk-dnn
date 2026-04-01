@@ -169,10 +169,11 @@ def root():
 @app.get("/health", tags=["Health"])
 def health():
     return {
-        "status":       "healthy",
-        "model_loaded": 'dnn' in model_store,
-        "n_features":   N_FEATURES,
-        "dataset":      "Taiwan Credit Card Default (30K rows)"
+        "status":         "healthy",
+        "model_loaded":   "dnn" in model_store,
+        "scaler_loaded":  "scaler" in model_store and model_store["scaler"] is not None,
+        "n_features":     N_FEATURES,
+        "dataset":        "Taiwan Credit Card Default (30K rows)"
     }
 
 
@@ -188,49 +189,57 @@ def get_features():
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Inference"])
 def predict(payload: ApplicantFeatures):
-    """Single applicant credit risk prediction."""
     try:
-        model = model_store['dnn']
+        model  = model_store.get("dnn")
+        scaler = model_store.get("scaler")
+
         if model is None:
-            raise RuntimeError("Model not loaded. Check startup logs.")
-        
-        logger.info(f"Received features count: {len(payload.features)}")
-        logger.info(f"Threshold: {payload.threshold}")
-        logger.info(f"Features sample (first 5): {payload.features[:5]}")
-        
-        X = torch.tensor([payload.features], dtype=torch.float32)
-        logger.info(f"Tensor shape: {X.shape}")
+            raise RuntimeError("Model not loaded.")
+
+        features = list(payload.features)
+
+        # ── Scale features server-side ────────────────────────────────
+        if scaler is not None:
+            import numpy as np
+            features = scaler.transform([features])[0].tolist()
+            logger.info(f"Scaled (first 5): {[round(f, 3) for f in features[:5]]}")
+        else:
+            logger.warning("⚠️ Scaler not found in model_store — check outputs/scaler.pkl")
+
+        threshold = payload.threshold if payload.threshold is not None else 0.4
+        logger.info(f"Features count: {len(features)} | Threshold: {threshold}")
+
+        X = torch.tensor([features], dtype=torch.float32)
 
         with torch.no_grad():
             logit, attn_weights = model(X)
             prob = torch.sigmoid(logit).item()
-            
+            attn = attn_weights.squeeze().tolist()   # Python list — no numpy
+
+        # Guard: squeeze() returns float scalar if batch=1 + single feature edge case
+        if not isinstance(attn, list):
+            attn = [float(attn)] * N_FEATURES
+
         logger.info(f"Prediction: {prob:.4f}")
 
-        # Attention-based top features
-        attn     = attn_weights.squeeze().tolist()
-        top5_idx = attn.argsort()[-5:][::-1]
+        # ✅ sorted() works on plain Python list — no .argsort() needed
+        top5_idx = sorted(range(len(attn)), key=lambda i: attn[i], reverse=True)[:5]
         top_feats = {
             DEFAULT_CREDIT_FEATURES[i]: round(float(attn[i]), 4)
             for i in top5_idx
         }
 
-        threshold = payload.threshold if payload.threshold is not None else 0.4
-        risk_label = "HIGH RISK" if prob >= threshold else "LOW RISK"
-        risk_score = int(round(prob * 100))
-
         return PredictionResponse(
             risk_probability       = round(prob, 4),
-            risk_label             = risk_label,
-            risk_score             = risk_score,
+            risk_label             = "HIGH RISK" if prob >= threshold else "LOW RISK",
+            risk_score             = int(round(prob * 100)),
             top_attention_features = top_feats,
             threshold_used         = threshold,
-            model_version          = "DNN-v1.0-DefaultCredit"
+            model_version          = os.getenv("MODEL_VERSION", "DNN-v1.0")
         )
+
     except Exception as e:
-        logger.error(f"Prediction failed: {e}")
         logger.error(traceback.format_exc())
-        
         raise HTTPException(status_code=500, detail=str(e))
 
 
