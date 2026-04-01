@@ -1,7 +1,13 @@
 .env
 .env.local
-# outputs/best_model.pth
+outputs/shap_*.png
+outputs/evaluation_*.png
+outputs/fairness_*.png
 outputs/tabnet_model.zip
+
+# ✅ These must NOT be ignored:
+# outputs/best_model.pth
+# outputs/scaler.pkl
 # data/
 __pycache__/
 .venv/
