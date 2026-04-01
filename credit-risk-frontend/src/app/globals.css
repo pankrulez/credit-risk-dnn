@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4 requires this single import instead of the old @tailwind directives */
+@import "tailwindcss";
 
 @layer base {
   /* Smooth scrolling for the whole application */
@@ -25,23 +24,13 @@
 }
 
 @layer utilities {
-  /* Utility to hide the scrollbar but keep functionality (Used in Navigation tabs) */
+  /* Utility to hide the scrollbar but keep functionality */
   .hide-scrollbar {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
   }
   .hide-scrollbar::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
-  }
-
-  /* Reusable glassmorphism card effect */
-  .glass-card {
-    @apply bg-white/60 dark:bg-zinc-900/50 backdrop-blur-xl border border-white/40 dark:border-zinc-800/50 shadow-xl;
-  }
-
-  /* Reusable text gradient */
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-emerald-600 dark:from-teal-400 dark:to-emerald-400;
   }
 
   /* Subtle dotted background pattern for depth */
