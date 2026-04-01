@@ -7,6 +7,16 @@ from sklearn.utils import resample
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+COLUMN_RENAME = {
+    'x1':  'LIMIT_BAL', 'x2':  'SEX',      'x3':  'EDUCATION',
+    'x4':  'MARRIAGE',  'x5':  'AGE',       'x6':  'PAY_0',
+    'x7':  'PAY_2',     'x8':  'PAY_3',     'x9':  'PAY_4',
+    'x10': 'PAY_5',     'x11': 'PAY_6',
+    'x12': 'BILL_AMT1', 'x13': 'BILL_AMT2', 'x14': 'BILL_AMT3',
+    'x15': 'BILL_AMT4', 'x16': 'BILL_AMT5', 'x17': 'BILL_AMT6',
+    'x18': 'PAY_AMT1',  'x19': 'PAY_AMT2',  'x20': 'PAY_AMT3',
+    'x21': 'PAY_AMT4',  'x22': 'PAY_AMT5',  'x23': 'PAY_AMT6',
+}
 
 class CreditDataset(Dataset):
     def __init__(self, X, y):
