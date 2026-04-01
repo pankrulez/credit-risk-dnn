@@ -12,7 +12,7 @@ jobs:
       - name: Ping Render API
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://credit-risk-dnn.onrender.com/health)
+            {RENDER_API_URL}/health)
           echo "Render health check status: $STATUS"
           if [ "$STATUS" != "200" ]; then
             echo "⚠️ Render returned $STATUS"
