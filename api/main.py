@@ -1,75 +1,95 @@
+# api/main.py
+
 import sys
-import re
 import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import torch
+import pickle
 import traceback
 import logging
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
-from contextlib import asynccontextmanager
-from typing import Optional
-from starlette.requests import Request
-from starlette.middleware.base import BaseHTTPMiddleware
-import numpy as np
-import torch
 
-from src.model import CreditRiskDNN
+from src.model  import CreditRiskDNN
 from src.config import Config
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from huggingface_hub import hf_hub_download
+
+# ── Logging ────────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ── Feature schema for Taiwan Default Credit dataset (30K rows) ───────────────
-DEFAULT_CREDIT_FEATURES = [
-    "LIMIT_BAL",    # Credit limit amount
-    "SEX",          # Gender (1=male, 2=female)
-    "EDUCATION",    # Education (1=grad, 2=university, 3=high school, 4=other)
-    "MARRIAGE",     # Marital status (1=married, 2=single, 3=other)
-    "AGE",          # Age in years
-    "PAY_0",        # Repayment status Sep (-1=paid duly, 1=delay 1 month, ...)
-    "PAY_2",        # Repayment status Aug
-    "PAY_3",        # Repayment status Jul
-    "PAY_4",        # Repayment status Jun
-    "PAY_5",        # Repayment status May
-    "PAY_6",        # Repayment status Apr
-    "BILL_AMT1",    # Bill statement Sep
-    "BILL_AMT2",    # Bill statement Aug
-    "BILL_AMT3",    # Bill statement Jul
-    "BILL_AMT4",    # Bill statement Jun
-    "BILL_AMT5",    # Bill statement May
-    "BILL_AMT6",    # Bill statement Apr
-    "PAY_AMT1",     # Amount paid Sep
-    "PAY_AMT2",     # Amount paid Aug
-    "PAY_AMT3",     # Amount paid Jul
-    "PAY_AMT4",     # Amount paid Jun
-    "PAY_AMT5",     # Amount paid May
-    "PAY_AMT6",     # Amount paid Apr
-]
+# ── Constants ──────────────────────────────────────────────────────────────────
+MODEL_FILE  = "best_model.pth"
+SCALER_FILE = "scaler.pkl"
+LOCAL_PATH  = os.path.join("outputs", MODEL_FILE)
+SCALER_PATH = os.path.join("outputs", SCALER_FILE)
 
+DEFAULT_CREDIT_FEATURES = [
+    "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE",
+    "PAY_0",     "PAY_2", "PAY_3",   "PAY_4",   "PAY_5", "PAY_6",
+    "BILL_AMT1", "BILL_AMT2", "BILL_AMT3",
+    "BILL_AMT4", "BILL_AMT5", "BILL_AMT6",
+    "PAY_AMT1",  "PAY_AMT2",  "PAY_AMT3",
+    "PAY_AMT4",  "PAY_AMT5",  "PAY_AMT6",
+]
 N_FEATURES = len(DEFAULT_CREDIT_FEATURES)   # 23
 
-# ── Global model state ────────────────────────────────────────────────────────
+# ── Global model store ─────────────────────────────────────────────────────────
 model_store: dict = {}
 
 
+# ── Lifespan ───────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load model once at startup, clean up on shutdown."""
+    os.makedirs("outputs", exist_ok=True)
+
+    # ── Model weights ──────────────────────────────────────────────────
+    if not os.path.exists(LOCAL_PATH):
+        print(f"📥 Model not found at {LOCAL_PATH}. Downloading from HuggingFace Hub...")
+        try:
+            from huggingface_hub import hf_hub_download
+            hf_hub_download(
+                repo_id=os.getenv("HF_MODEL_REPO", ""),
+                filename=MODEL_FILE,
+                local_dir="outputs",
+                token=os.getenv("HF_TOKEN", None)
+            )
+            print("✅ Model downloaded successfully.")
+        except Exception as e:
+            raise RuntimeError(
+                f"Model weights not found at {LOCAL_PATH} and download failed: {e}\n"
+                "Run: python main.py --model dnn --dataset default"
+            )
+
     model = CreditRiskDNN(n_features=N_FEATURES, dropout=0.3)
-    model_path = os.path.join(
-        os.path.dirname(__file__), '..', 'outputs', 'best_model.pth'
-    )
-    if not os.path.exists(model_path):
-        raise RuntimeError(
-            "Model weights not found at outputs/best_model.pth.\n"
-            "Run: python main.py --model dnn --dataset default"
-        )
-    model.load_state_dict(torch.load(model_path, map_location='cpu'))
+    model.load_state_dict(torch.load(LOCAL_PATH, map_location="cpu"))
     model.eval()
-    model_store['dnn'] = model
-    print("✅ Model loaded successfully.")
+    torch.set_num_threads(1)
+    model_store["dnn"] = model
+    print(f"✅ Model loaded from {LOCAL_PATH}")
+
+    # ── Scaler ─────────────────────────────────────────────────────────
+    print(f"🔍 Looking for scaler at: {os.path.abspath(SCALER_PATH)}")
+    print(f"   outputs/ contents: {os.listdir('outputs')}")
+
+    if os.path.exists(SCALER_PATH):
+        with open(SCALER_PATH, "rb") as f:
+            model_store["scaler"] = pickle.load(f)
+        print(f"✅ Scaler loaded. mean_[0]={model_store['scaler'].mean_[0]:.2f}")
+    else:
+        model_store["scaler"] = None
+        print("❌ scaler.pkl NOT FOUND — predictions will use unscaled features!")
+
+    import gc; gc.collect()
     yield
     model_store.clear()
 
@@ -78,78 +98,38 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Credit Risk Assessment API",
     description=(
-        "Deep Neural Network-powered credit default prediction with "
-        "attention-based explainability. Trained on Taiwan Credit Card Default dataset."
+        "Deep Neural Network-powered credit default prediction "
+        "with attention-based explainability."
     ),
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
 )
 
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:8501",
-    "https://*.vercel.app",          # all Vercel preview + prod deployments
-    "https://*.hf.space",            # HuggingFace Spaces
-    os.getenv("FRONTEND_URL", ""),   # explicit Vercel URL from .env
-]
-
-VERCEL_PATTERN = re.compile(r"https://[\w-]+\.vercel\.app")
-HF_PATTERN     = re.compile(r"https://[\w-]+\.hf\.space")
-
-class DynamicCORSMiddleware(BaseHTTPMiddleware):
-    """Handles wildcard patterns for Vercel preview URLs."""
-    async def dispatch(self, request: Request, call_next):
-        origin   = request.headers.get("origin", "")
-        allowed  = (
-            origin in ALLOWED_ORIGINS
-            or bool(VERCEL_PATTERN.match(origin))
-            or bool(HF_PATTERN.match(origin))
-        )
-
-        if request.method == "OPTIONS":
-            # Handle CORS preflight
-            headers = {
-                "Access-Control-Allow-Origin":  origin if allowed else "",
-                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                "Access-Control-Max-Age":       "86400",
-            }
-            from starlette.responses import Response
-            return Response(status_code=200, headers=headers)
-
-        response = await call_next(request)
-        if allowed:
-            response.headers["Access-Control-Allow-Origin"]  = origin
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        return response
-    
-app.add_middleware(DynamicCORSMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ── Schemas ────────────────────────────────────────────────────────────────────
 class ApplicantFeatures(BaseModel):
-    features: list[float] = Field(
-        ...,
-        min_length=N_FEATURES,
-        max_length=N_FEATURES,
-        description=f"Exactly {N_FEATURES} pre-scaled feature values"
+    features:  list[float] = Field(
+        ..., min_length=N_FEATURES, max_length=N_FEATURES,
+        description=f"Exactly {N_FEATURES} raw (unscaled) feature values"
     )
-    threshold: Optional[float] = Field(
-        default=0.4,
-        ge=0.0, le=1.0,
-        description="Decision threshold (default 0.4 — optimized for recall)"
-    )
+    threshold: float = Field(default=0.4, ge=0.0, le=1.0)
 
 
 class PredictionResponse(BaseModel):
-    risk_probability:  float
-    risk_label:        str
-    risk_score:        int             # 0-100 scale for UI display
+    risk_probability:       float
+    risk_label:             str
+    risk_score:             int
     top_attention_features: dict
-    threshold_used:    float
-    model_version:     str
+    threshold_used:         float
+    model_version:          str
 
 
 class BatchRequest(BaseModel):
@@ -157,33 +137,34 @@ class BatchRequest(BaseModel):
 
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
-@app.get("/", tags=["Health"])
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {
-        "status": "ok",
+        "status":  "ok",
         "message": "Credit Risk Assessment API is live 🚀",
-        "docs": "/docs"
+        "docs":    "/docs"
     }
 
 
 @app.get("/health", tags=["Health"])
 def health():
+    scaler = model_store.get("scaler")
     return {
-        "status":         "healthy",
-        "model_loaded":   "dnn" in model_store,
-        "scaler_loaded":  "scaler" in model_store and model_store["scaler"] is not None,
-        "n_features":     N_FEATURES,
-        "dataset":        "Taiwan Credit Card Default (30K rows)"
+        "status":        "healthy",
+        "model_loaded":  "dnn" in model_store,
+        "scaler_loaded": scaler is not None,
+        "scaler_mean_0": round(float(scaler.mean_[0]), 2) if scaler is not None else None,
+        "n_features":    N_FEATURES,
+        "dataset":       "Taiwan Credit Card Default (30K rows)"
     }
 
 
 @app.get("/features", tags=["Metadata"])
 def get_features():
-    """Returns the expected feature names and their order."""
     return {
         "features":    DEFAULT_CREDIT_FEATURES,
         "count":       N_FEATURES,
-        "description": "Pre-scale all features using StandardScaler before sending"
+        "description": "Send raw unscaled values — API handles StandardScaler internally"
     }
 
 
@@ -194,35 +175,32 @@ def predict(payload: ApplicantFeatures):
         scaler = model_store.get("scaler")
 
         if model is None:
-            raise RuntimeError("Model not loaded.")
+            raise RuntimeError("Model not loaded. Check startup logs.")
 
         features = list(payload.features)
 
-        # ── Scale features server-side ────────────────────────────────
+        # ── Scale server-side ──────────────────────────────────────────
         if scaler is not None:
             import numpy as np
             features = scaler.transform([features])[0].tolist()
             logger.info(f"Scaled (first 5): {[round(f, 3) for f in features[:5]]}")
         else:
-            logger.warning("⚠️ Scaler not found in model_store — check outputs/scaler.pkl")
+            logger.warning("⚠️ Scaler missing — using raw features.")
 
-        threshold = payload.threshold if payload.threshold is not None else 0.4
-        logger.info(f"Features count: {len(features)} | Threshold: {threshold}")
+        logger.info(f"Features count: {len(features)} | Threshold: {payload.threshold}")
 
         X = torch.tensor([features], dtype=torch.float32)
 
         with torch.no_grad():
             logit, attn_weights = model(X)
             prob = torch.sigmoid(logit).item()
-            attn = attn_weights.squeeze().tolist()   # Python list — no numpy
+            attn = attn_weights.squeeze().tolist()
 
-        # Guard: squeeze() returns float scalar if batch=1 + single feature edge case
         if not isinstance(attn, list):
             attn = [float(attn)] * N_FEATURES
 
         logger.info(f"Prediction: {prob:.4f}")
 
-        # ✅ sorted() works on plain Python list — no .argsort() needed
         top5_idx = sorted(range(len(attn)), key=lambda i: attn[i], reverse=True)[:5]
         top_feats = {
             DEFAULT_CREDIT_FEATURES[i]: round(float(attn[i]), 4)
@@ -231,10 +209,10 @@ def predict(payload: ApplicantFeatures):
 
         return PredictionResponse(
             risk_probability       = round(prob, 4),
-            risk_label             = "HIGH RISK" if prob >= threshold else "LOW RISK",
+            risk_label             = "HIGH RISK" if prob >= payload.threshold else "LOW RISK",
             risk_score             = int(round(prob * 100)),
             top_attention_features = top_feats,
-            threshold_used         = threshold,
+            threshold_used         = payload.threshold,
             model_version          = os.getenv("MODEL_VERSION", "DNN-v1.0")
         )
 
@@ -245,55 +223,73 @@ def predict(payload: ApplicantFeatures):
 
 @app.post("/predict/batch", tags=["Inference"])
 def predict_batch(payload: BatchRequest):
-    """Batch prediction for multiple applicants."""
     if len(payload.applicants) > 500:
-        raise HTTPException(
-            status_code=400,
-            detail="Batch size exceeds limit of 500. Split into smaller requests."
-        )
+        raise HTTPException(status_code=400, detail="Batch size exceeds 500.")
     try:
-        model    = model_store['dnn']
-        features = [a.features for a in payload.applicants]
-        X        = torch.tensor(features, dtype=torch.float32)
+        model  = model_store.get("dnn")
+        scaler = model_store.get("scaler")
 
+        if model is None:
+            raise RuntimeError("Model not loaded.")
+
+        all_features = [list(a.features) for a in payload.applicants]
+
+        if scaler is not None:
+            import numpy as np
+            all_features = scaler.transform(all_features).tolist()
+
+        X = torch.tensor(all_features, dtype=torch.float32)
         with torch.no_grad():
             logits, _ = model(X)
-            probs = torch.sigmoid(logits).cpu().tolist()
+            probs = torch.sigmoid(logits).tolist()
 
-        results = []
-        for i, (prob, applicant) in enumerate(zip(probs, payload.applicants)):
-            threshold = applicant.threshold if applicant.threshold is not None else 0.4
-            results.append({
-                "applicant_index": i,
-                "risk_probability": round(float(prob), 4),
-                "risk_label": "HIGH RISK" if prob >= threshold else "LOW RISK",
-                "risk_score": int(round(float(prob) * 100))
-            })
-        return {"predictions": results, "count": len(results)}
+        if not isinstance(probs, list):
+            probs = [probs]
+
+        return {
+            "predictions": [
+                {
+                    "applicant_index": i,
+                    "risk_probability": round(float(p), 4),
+                    "risk_label": "HIGH RISK" if p >= payload.applicants[i].threshold else "LOW RISK",
+                    "risk_score": int(round(float(p) * 100))
+                }
+                for i, p in enumerate(probs)
+            ],
+            "count": len(probs)
+        }
 
     except Exception as e:
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
-    
-    
+
+
 @app.get("/predict/test", tags=["Debug"])
 def predict_test():
     try:
-        model = model_store.get("dnn")
+        model  = model_store.get("dnn")
+        scaler = model_store.get("scaler")
+
         if model is None:
             return {"status": "error", "detail": "Model not in model_store"}
 
         dummy = torch.zeros(1, N_FEATURES)
         with torch.no_grad():
             logit, attn = model(dummy)
-            prob  = torch.sigmoid(logit).item()
-            attn_list = attn.squeeze().tolist()   # ✅ .tolist()
+            prob      = torch.sigmoid(logit).item()
+            attn_list = attn.squeeze().tolist()
 
         return {
-            "status":       "ok",
-            "test_prob":    round(prob, 4),
-            "n_features":   N_FEATURES,
-            "model_loaded": True,
-            "attn_length":  len(attn_list) if isinstance(attn_list, list) else 1,
+            "status":        "ok",
+            "test_prob":     round(prob, 4),
+            "n_features":    N_FEATURES,
+            "model_loaded":  True,
+            "scaler_loaded": scaler is not None,
+            "attn_length":   len(attn_list) if isinstance(attn_list, list) else 1,
         }
     except Exception as e:
-        return {"status": "error", "detail": str(e), "trace": traceback.format_exc()}
+        return {
+            "status": "error",
+            "detail": str(e),
+            "trace":  traceback.format_exc()
+        }

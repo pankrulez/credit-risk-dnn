@@ -145,6 +145,15 @@ def main():
         )
 
     print("\n✅ Pipeline complete. Outputs saved to outputs/")
+    
+# ── Upload artifacts to HuggingFace Hub ───────────────────────────────────
+if os.getenv("HF_TOKEN") and os.getenv("HF_MODEL_REPO"):
+    print("\n📤 Uploading artifacts to HuggingFace Hub...")
+    from src.hf_hub import upload_artifacts
+    upload_artifacts()
+else:
+    print("\n⚠️ HF_TOKEN or HF_MODEL_REPO not set — skipping HF upload.")
+    print("   Set them in .env to enable auto-upload.")
 
 
 if __name__ == '__main__':

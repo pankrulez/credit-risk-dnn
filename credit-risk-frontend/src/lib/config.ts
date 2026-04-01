@@ -22,6 +22,8 @@ export const config = {
   // ── API ─────────────────────────────────────────────────────────────
   // In production:  "" + "/backend" → Vercel rewrites → Render
   // In development: "http://localhost:8000" + "" → direct
+  hfModelUrl: requireEnv("NEXT_PUBLIC_HF_MODEL_URL", ""),
+  
   apiUrl:
     process.env.NODE_ENV === "production"
       ? ""
