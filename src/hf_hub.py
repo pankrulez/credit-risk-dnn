@@ -129,7 +129,6 @@ print(f"Default probability: {{prob:.1%}}")
 
 ## Live Demo
 
-- **API**: https://credit-risk-dnn.onrender.com/docs
 - **Frontend**: https://your-app.vercel.app
 
 ## Fairness
