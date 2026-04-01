@@ -15,11 +15,11 @@ jobs:
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}")
           echo "Render deploy hook status: $STATUS"
-          if [ "$STATUS" != "200" ] && [ "$STATUS" != "201" ]; then
-            echo "⚠️ Render deploy hook returned $STATUS"
+          if [ "$STATUS" != "200" ] && [ "$STATUS" != "201" ] && [ "$STATUS" != "202" ]; then
+            echo "❌ Render deploy hook failed with status $STATUS"
             exit 1
           fi
-          echo "✅ Render redeploy triggered"
+          echo "✅ Render redeploy triggered successfully (HTTP $STATUS)"
 
   # ── Job 2: Upload artifacts to HuggingFace Hub ──────────────────────────────
   deploy-hf:
