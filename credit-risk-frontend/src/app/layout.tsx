@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50 dark:from-[#0d1117] dark:via-[#161b22] dark:to-[#0d1117] text-zinc-900 dark:text-zinc-100 selection:bg-teal-500/30">
+      <body className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50 dark:from-[#0d1117] dark:via-[#161b22] dark:to-[#0d1117] text-zinc-900 dark:text-zinc-100 bg-dot-pattern">
         
         {/* Decorative top background glow */}
         <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-teal-500/10 to-transparent pointer-events-none" />
