@@ -26,7 +26,7 @@ export default function RootLayout({
           Added pb-24 for mobile so content doesn't get hidden behind the bottom nav bar.
           Desktop retains standard padding.
         */}
-        <main className="relative flex-grow w-full max-w-[1400px] mx-auto p-4 pb-24 md:p-8 lg:p-12 z-10 flex flex-col">
+        <main className="relative flex-grow w-full max-w-[1400px] mx-auto p-4 md:p-8 lg:p-12 z-10 flex flex-col">
           
           {/* Header */}
           <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
