@@ -1,102 +1,93 @@
-import Image from 'next/image';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { 
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid
+} from 'recharts';
 
 export default function OverviewTab() {
-  const metrics = [
-    { label: 'Total Records', value: '30,000' },
-    { label: 'Default Rate', value: '22.1%' },
-    { label: 'Features', value: '23' },
-    { label: 'Imbalance Strategy', value: 'Upsampled (40%)' },
-  ];
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/plots/metrics.json')
+      .then(res => res.json())
+      .then(json => setData(json))
+      .catch(err => console.error("Error loading metrics:", err));
+  }, []);
+
+  if (!data) {
+    return <div className="p-12 text-center animate-pulse text-slate-500">Loading dataset overview...</div>;
+  }
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-xl">
+          {label && <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">{label}</p>}
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm flex items-center gap-2" style={{ color: entry.color || entry.payload.fill }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.payload.fill }}></span>
+              {entry.name}: <span className="font-bold">{entry.value.toLocaleString()}</span>
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
-      
-      {/* Introduction */}
-      <section className="max-w-[65ch]">
-        <h2 className="text-xl font-semibold mb-2">Dataset Overview</h2>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          This dataset contains information on default payments, demographic factors, credit data, 
-          history of payment, and bill statements of credit card clients in Taiwan from April 2005 
-          to September 2005.
-        </p>
-      </section>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Dataset Overview</h2>
+        <p className="text-slate-600 dark:text-slate-400">Exploring the 30,000 records from the Taiwan Credit Card dataset.</p>
+      </div>
 
-      {/* KPI Cards */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {metrics.map((metric) => (
-          <div 
-            key={metric.label} 
-            className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#1c1b19] shadow-sm"
-          >
-            <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">{metric.label}</div>
-            <div className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              {metric.value}
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {/* Charts Grid */}
-      <section className="space-y-8">
-        <h3 className="text-lg font-semibold border-b border-zinc-200 dark:border-zinc-800 pb-2">
-          Exploratory Analysis
-        </h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Row 1: Distribution & Demographics */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1c1b19] overflow-hidden">
-            <div className="aspect-[16/9] relative bg-zinc-100 dark:bg-zinc-900">
-              <Image 
-                src="/plots/01_target_distribution.png" 
-                alt="Target Distribution" 
-                fill
-                className="object-contain p-2"
-                unoptimized
-              />
-            </div>
-            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-              <h4 className="font-medium text-sm">Target Imbalance</h4>
-              <p className="text-xs text-zinc-500 mt-1">Significant class imbalance requiring resampling during preprocessing.</p>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1c1b19] overflow-hidden">
-            <div className="aspect-[16/9] relative bg-zinc-100 dark:bg-zinc-900">
-              <Image 
-                src="/plots/01_default_rate_by_category.png" 
-                alt="Default Rate by Category" 
-                fill
-                className="object-contain p-2"
-                unoptimized
-              />
-            </div>
-            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-              <h4 className="font-medium text-sm">Demographic Trends</h4>
-              <p className="text-xs text-zinc-500 mt-1">Default rates analyzed across gender, education, and marital status.</p>
-            </div>
+        {/* Class Balance Donut Chart */}
+        <div className="bg-white dark:bg-[#1c1b19] p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Class Balance (Target Variable)</h3>
+          <div className="flex-grow min-h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie 
+                  data={data.class_balance} 
+                  cx="50%" cy="50%" 
+                  innerRadius={80} outerRadius={110} 
+                  paddingAngle={5} dataKey="value"
+                >
+                  {data.class_balance.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Row 2: Heatmap (Full Width) */}
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#1c1b19] overflow-hidden">
-          <div className="aspect-[21/9] relative bg-zinc-100 dark:bg-zinc-900">
-            <Image 
-              src="/plots/01_correlation_heatmap.png" 
-              alt="Feature Correlation Heatmap" 
-              fill
-              className="object-contain p-4"
-              unoptimized
-            />
-          </div>
-          <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-            <h4 className="font-medium text-sm">Feature Correlations</h4>
-            <p className="text-xs text-zinc-500 mt-1">
-              Repayment status (PAY_0 to PAY_6) shows the strongest positive correlation with the default target.
-            </p>
+        {/* Education Demographics Bar Chart */}
+        <div className="bg-white dark:bg-[#1c1b19] p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Default Rate by Education</h3>
+          <div className="flex-grow min-h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.education_data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} vertical={false} />
+                <XAxis dataKey="level" tick={{ fill: '#64748b', fontSize: 12 }} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(100, 116, 139, 0.1)' }} />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                <Bar dataKey="Paid" name="Low Risk (Paid)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Defaulted" name="High Risk (Default)" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-      </section>
+      </div>
     </div>
   );
 }
