@@ -188,26 +188,44 @@ export default function BatchScoringPage() {
             </div>
           )}
 
-          {results && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 h-full animate-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-white dark:bg-[#1c1b19] p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center text-center">
-                <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider">Processed</p>
-                <p className="text-4xl font-black text-slate-900 dark:text-white">{results.totalProcessed}</p>
-                <p className="text-xs text-slate-400 mt-2">Rows analyzed</p>
-              </div>
-              <div className="bg-red-50 dark:bg-red-950/20 p-6 rounded-2xl md:rounded-3xl border border-red-200 dark:border-red-900/50 shadow-sm flex flex-col justify-center text-center relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 text-5xl opacity-10">⚠️</div>
-                <p className="text-red-600 dark:text-red-400 text-xs font-bold mb-1 uppercase tracking-wider relative z-10">High Risk</p>
-                <p className="text-4xl font-black text-red-700 dark:text-red-400 relative z-10">{results.highRiskFound}</p>
-                <p className="text-xs text-red-500 mt-2 relative z-10">{((results.highRiskFound / results.totalProcessed) * 100).toFixed(1)}% of total</p>
-              </div>
-              <div className="bg-teal-50 dark:bg-teal-950/20 p-6 rounded-2xl md:rounded-3xl border border-teal-200 dark:border-teal-900/50 shadow-sm flex flex-col justify-center text-center">
-                <p className="text-teal-700 dark:text-teal-400 text-xs font-bold mb-1 uppercase tracking-wider">Avg Prob</p>
-                <p className="text-4xl font-black text-teal-800 dark:text-teal-300">{(results.avgProbability * 100).toFixed(1)}%</p>
-                <p className="text-xs text-teal-600 mt-2">Dataset average</p>
-              </div>
+          {/* Results Overview (Metrics) */}
+        {results && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 h-full">
+            
+            {/* Card 1: Processed */}
+            <div className="group relative bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center text-center overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-transparent dark:from-zinc-800/50 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider relative z-10">Processed</p>
+                <p className="text-4xl font-black text-slate-900 dark:text-white relative z-10">{results.totalProcessed}</p>
+                <p className="text-xs text-slate-400 mt-2 relative z-10">Rows analyzed</p>
             </div>
-          )}
+
+            {/* Card 2: High Risk (With Animated Gradient Glow) */}
+            <div className="group relative p-6 rounded-2xl md:rounded-3xl shadow-sm flex flex-col justify-center text-center overflow-hidden hover:-translate-y-1 hover:shadow-red-500/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
+                {/* The animated gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-red-100 via-rose-100 to-red-50 dark:from-red-950/40 dark:via-rose-900/30 dark:to-red-900/20 animate-gradient z-0"></div>
+                {/* Card border and structure */}
+                <div className="absolute inset-0 border border-red-200 dark:border-red-900/50 rounded-2xl md:rounded-3xl z-10"></div>
+                
+                <p className="text-red-600 dark:text-red-400 text-xs font-bold mb-1 uppercase tracking-wider relative z-20">High Risk</p>
+                <p className="text-4xl font-black text-red-700 dark:text-red-400 relative z-20">{results.highRiskFound}</p>
+                <p className="text-xs text-red-500 mt-2 relative z-20">{((results.highRiskFound / results.totalProcessed) * 100).toFixed(1)}% of total</p>
+            </div>
+
+            {/* Card 3: Avg Prob (With Animated Gradient Glow) */}
+            <div className="group relative p-6 rounded-2xl md:rounded-3xl shadow-sm flex flex-col justify-center text-center overflow-hidden hover:-translate-y-1 hover:shadow-teal-500/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both">
+                {/* The animated gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-50 via-emerald-100 to-teal-100 dark:from-teal-950/40 dark:via-emerald-900/20 dark:to-teal-900/30 animate-gradient z-0"></div>
+                {/* Card border and structure */}
+                <div className="absolute inset-0 border border-teal-200 dark:border-teal-900/50 rounded-2xl md:rounded-3xl z-10"></div>
+                
+                <p className="text-teal-700 dark:text-teal-400 text-xs font-bold mb-1 uppercase tracking-wider relative z-20">Avg Prob</p>
+                <p className="text-4xl font-black text-teal-800 dark:text-teal-300 relative z-20">{(results.avgProbability * 100).toFixed(1)}%</p>
+                <p className="text-xs text-teal-600 mt-2 relative z-20">Dataset average</p>
+            </div>
+
+            </div>
+        )}
         </div>
       </div>
 

@@ -38,32 +38,25 @@ export default function OverviewTab() {
   };
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8">
       
-      <div className="mb-2 md:mb-6">
+      <div className="mb-2 md:mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100">Dataset Overview</h2>
         <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-1">Exploring the 30,000 records from the Taiwan Credit Card dataset.</p>
       </div>
 
-      {/* Responsive Grid: 1 column on mobile, 2 on large screens */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Class Balance Donut Chart */}
-        <div className="bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col">
-          <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Class Balance (Target Variable)</h3>
+        {/* Class Balance Donut Chart (Staggered delay 1) */}
+        <div className="group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-300 flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150 fill-mode-both">
+          <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Class Balance</h3>
           <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Ratio of clients who paid vs defaulted.</p>
           <div className="flex-grow h-[250px] md:h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie 
-                  data={data.class_balance} 
-                  cx="50%" cy="50%" 
-                  // Scaled down radii for mobile so it doesn't clip
-                  innerRadius="60%" outerRadius="80%" 
-                  paddingAngle={5} dataKey="value"
-                >
+                <Pie data={data.class_balance} cx="50%" cy="50%" innerRadius="60%" outerRadius="80%" paddingAngle={5} dataKey="value">
                   {data.class_balance.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                    <Cell key={`cell-${index}`} fill={entry.fill} className="hover:opacity-80 transition-opacity duration-300 outline-none" />
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
@@ -73,21 +66,20 @@ export default function OverviewTab() {
           </div>
         </div>
 
-        {/* Education Demographics Bar Chart */}
-        <div className="bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col">
-          <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Default Rate by Education</h3>
+        {/* Education Demographics Bar Chart (Staggered delay 2) */}
+        <div className="group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-300 flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
+          <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Default Rate by Education</h3>
           <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Breakdown of risk across education levels.</p>
           <div className="flex-grow h-[250px] md:h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.education_data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} vertical={false} />
-                {/* Font sizes dropped to 10px on X-axis so words like "University" fit on mobile */}
                 <XAxis dataKey="level" tick={{ fill: '#64748b', fontSize: 10 }} interval={0} />
                 <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(100, 116, 139, 0.05)' }} />
                 <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="Paid" name="Low Risk (Paid)" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Defaulted" name="High Risk (Default)" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Paid" name="Low Risk (Paid)" fill="#10b981" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity duration-300" />
+                <Bar dataKey="Defaulted" name="High Risk (Default)" fill="#ef4444" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity duration-300" />
               </BarChart>
             </ResponsiveContainer>
           </div>
