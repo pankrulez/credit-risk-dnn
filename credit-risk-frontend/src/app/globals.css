@@ -73,3 +73,9 @@
     background: rgba(161, 161, 170, 0.8); /* Zinc-400 */
   }
 }
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-pb {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
+}
