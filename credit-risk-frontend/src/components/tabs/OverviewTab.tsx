@@ -17,16 +17,16 @@ export default function OverviewTab() {
   }, []);
 
   if (!data) {
-    return <div className="p-12 text-center animate-pulse text-slate-500">Loading dataset overview...</div>;
+    return <div className="p-12 text-center font-medium animate-pulse text-slate-500">Loading dataset overview...</div>;
   }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-xl">
+        <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xl z-50">
           {label && <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">{label}</p>}
           {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm flex items-center gap-2" style={{ color: entry.color || entry.payload.fill }}>
+            <p key={index} className="text-sm font-medium flex items-center gap-2" style={{ color: entry.color || entry.payload.fill }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.payload.fill }}></span>
               {entry.name}: <span className="font-bold">{entry.value.toLocaleString()}</span>
             </p>
@@ -38,24 +38,28 @@ export default function OverviewTab() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Dataset Overview</h2>
-        <p className="text-slate-600 dark:text-slate-400">Exploring the 30,000 records from the Taiwan Credit Card dataset.</p>
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+      
+      <div className="mb-2 md:mb-6">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100">Dataset Overview</h2>
+        <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-1">Exploring the 30,000 records from the Taiwan Credit Card dataset.</p>
       </div>
 
+      {/* Responsive Grid: 1 column on mobile, 2 on large screens */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Class Balance Donut Chart */}
-        <div className="bg-white dark:bg-[#1c1b19] p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Class Balance (Target Variable)</h3>
-          <div className="flex-grow min-h-[300px] w-full">
+        <div className="bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col">
+          <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Class Balance (Target Variable)</h3>
+          <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Ratio of clients who paid vs defaulted.</p>
+          <div className="flex-grow h-[250px] md:h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie 
                   data={data.class_balance} 
                   cx="50%" cy="50%" 
-                  innerRadius={80} outerRadius={110} 
+                  // Scaled down radii for mobile so it doesn't clip
+                  innerRadius="60%" outerRadius="80%" 
                   paddingAngle={5} dataKey="value"
                 >
                   {data.class_balance.map((entry: any, index: number) => (
@@ -63,23 +67,25 @@ export default function OverviewTab() {
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Education Demographics Bar Chart */}
-        <div className="bg-white dark:bg-[#1c1b19] p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Default Rate by Education</h3>
-          <div className="flex-grow min-h-[300px] w-full">
+        <div className="bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col">
+          <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Default Rate by Education</h3>
+          <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Breakdown of risk across education levels.</p>
+          <div className="flex-grow h-[250px] md:h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.education_data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} vertical={false} />
-                <XAxis dataKey="level" tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(100, 116, 139, 0.1)' }} />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+              <BarChart data={data.education_data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} vertical={false} />
+                {/* Font sizes dropped to 10px on X-axis so words like "University" fit on mobile */}
+                <XAxis dataKey="level" tick={{ fill: '#64748b', fontSize: 10 }} interval={0} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(100, 116, 139, 0.05)' }} />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
                 <Bar dataKey="Paid" name="Low Risk (Paid)" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Defaulted" name="High Risk (Default)" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>

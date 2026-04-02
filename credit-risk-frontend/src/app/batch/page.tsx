@@ -9,7 +9,6 @@ export default function BatchScoringPage() {
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<any | null>(null);
 
-  // Generates a synthetic dataset for the user to download
   const handleDownloadTemplate = () => {
     const headers = "LIMIT_BAL,SEX,EDUCATION,MARRIAGE,AGE,PAY_0,PAY_2,PAY_3,PAY_4,PAY_5,PAY_6,BILL_AMT1,BILL_AMT2,BILL_AMT3,BILL_AMT4,BILL_AMT5,BILL_AMT6,PAY_AMT1,PAY_AMT2,PAY_AMT3,PAY_AMT4,PAY_AMT5,PAY_AMT6\n";
     const row1 = "50000,2,2,1,37,0,0,0,0,0,0,46990,48233,49291,28314,28959,29547,2000,2019,1200,1100,1069,1000\n";
@@ -24,13 +23,8 @@ export default function BatchScoringPage() {
     a.click();
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = () => setIsDragging(false);
-
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -45,7 +39,6 @@ export default function BatchScoringPage() {
     setProgress(0);
     setResults(null);
 
-    // Simulate batch processing progress
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -56,6 +49,10 @@ export default function BatchScoringPage() {
             highRiskFound: Math.floor(Math.random() * 50) + 10,
             avgProbability: (Math.random() * 0.3 + 0.1).toFixed(2),
           });
+          // Auto-scroll to results on mobile
+          if (window.innerWidth < 768) {
+            setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 300);
+          }
           return 100;
         }
         return prev + 5;
@@ -64,15 +61,16 @@ export default function BatchScoringPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto py-4">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto py-2 md:py-4">
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 dark:bg-[#1c1b19] p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+      {/* Header & Download Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-[#1c1b19] p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Batch Scoring</h2>
+          <h2 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100">Batch Scoring</h2>
           <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm">Upload a CSV to score multiple clients at once.</p>
         </div>
-        <button onClick={handleDownloadTemplate} className="px-4 py-2 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 rounded-lg transition-colors border border-teal-200 dark:border-teal-800">
-          📥 Download Test CSV
+        <button onClick={handleDownloadTemplate} className="w-full sm:w-auto px-5 py-3 md:py-2.5 text-sm font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 rounded-xl transition-colors border border-teal-200 dark:border-teal-800 flex items-center justify-center gap-2">
+          <span>📥</span> Download Test CSV
         </button>
       </div>
 
@@ -81,19 +79,19 @@ export default function BatchScoringPage() {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 ${
+        className={`border-2 border-dashed rounded-2xl md:rounded-3xl p-8 md:p-12 text-center transition-all duration-300 ${
           isDragging ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/10 scale-[1.02]' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900'
         }`}
       >
-        <div className="text-5xl mb-4">{file ? '📄' : '☁️'}</div>
-        <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-2">
+        <div className="text-4xl md:text-5xl mb-3 md:mb-4">{file ? '📄' : '☁️'}</div>
+        <h3 className="text-base md:text-lg font-bold text-slate-700 dark:text-slate-200 mb-1 md:mb-2 truncate px-4">
           {file ? file.name : 'Drag & Drop your CSV file here'}
         </h3>
-        <p className="text-slate-500 text-sm mb-6">
+        <p className="text-slate-500 text-xs md:text-sm mb-6">
           {file ? `${(file.size / 1024).toFixed(1)} KB` : 'or click to browse from your computer'}
         </p>
 
-        <label className="cursor-pointer px-6 py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold rounded-xl shadow-sm transition-all">
+        <label className="cursor-pointer inline-flex items-center justify-center px-8 py-3.5 md:py-3 bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-md transition-all text-sm w-full sm:w-auto">
           Browse Files
           <input type="file" className="hidden" accept=".csv" onChange={(e) => setFile(e.target.files?.[0] || null)} />
         </label>
@@ -101,10 +99,10 @@ export default function BatchScoringPage() {
 
       {/* Processing Actions */}
       {file && !results && (
-        <div className="bg-white dark:bg-[#1c1b19] p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm text-center">
+        <div className="bg-white dark:bg-[#1c1b19] p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm text-center animate-in slide-in-from-bottom-2 duration-300">
           {isProcessing ? (
             <div className="space-y-4">
-              <div className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300">
+              <div className="flex justify-between text-sm font-bold text-slate-700 dark:text-slate-300">
                 <span>Processing Records...</span>
                 <span>{progress}%</span>
               </div>
@@ -113,8 +111,8 @@ export default function BatchScoringPage() {
               </div>
             </div>
           ) : (
-            <button onClick={handleProcess} className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition-all text-lg">
-              🚀 Run Batch Inference
+            <button onClick={handleProcess} className="w-full px-6 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition-all text-base md:text-lg flex items-center justify-center gap-2">
+              <span>🚀</span> Run Batch Inference
             </button>
           )}
         </div>
@@ -122,18 +120,18 @@ export default function BatchScoringPage() {
 
       {/* Results Overview */}
       {results && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-white dark:bg-[#1c1b19] p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm text-center">
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Total Processed</p>
-            <p className="text-3xl font-extrabold text-slate-900 dark:text-white">{results.totalProcessed}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white dark:bg-[#1c1b19] p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm text-center">
+            <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm font-bold mb-1 uppercase tracking-wider">Processed</p>
+            <p className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">{results.totalProcessed}</p>
           </div>
-          <div className="bg-red-50 dark:bg-red-950/20 p-6 rounded-2xl border border-red-200 dark:border-red-900/50 shadow-sm text-center">
-            <p className="text-red-600 dark:text-red-400 text-sm font-medium mb-1">High Risk Clients</p>
-            <p className="text-3xl font-extrabold text-red-700 dark:text-red-400">{results.highRiskFound}</p>
+          <div className="bg-red-50 dark:bg-red-950/20 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-red-200 dark:border-red-900/50 shadow-sm text-center">
+            <p className="text-red-600 dark:text-red-400 text-xs md:text-sm font-bold mb-1 uppercase tracking-wider">High Risk</p>
+            <p className="text-3xl md:text-4xl font-black text-red-700 dark:text-red-400">{results.highRiskFound}</p>
           </div>
-          <div className="bg-teal-50 dark:bg-teal-950/20 p-6 rounded-2xl border border-teal-200 dark:border-teal-900/50 shadow-sm text-center">
-            <p className="text-teal-700 dark:text-teal-400 text-sm font-medium mb-1">Avg Default Prob</p>
-            <p className="text-3xl font-extrabold text-teal-800 dark:text-teal-300">{(results.avgProbability * 100).toFixed(1)}%</p>
+          <div className="bg-teal-50 dark:bg-teal-950/20 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-teal-200 dark:border-teal-900/50 shadow-sm text-center">
+            <p className="text-teal-700 dark:text-teal-400 text-xs md:text-sm font-bold mb-1 uppercase tracking-wider">Avg Prob</p>
+            <p className="text-3xl md:text-4xl font-black text-teal-800 dark:text-teal-300">{(results.avgProbability * 100).toFixed(1)}%</p>
           </div>
         </div>
       )}
