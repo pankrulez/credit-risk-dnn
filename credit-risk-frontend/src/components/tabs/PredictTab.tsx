@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-// Define the exact shape your backend expects
+// Define the exact shape your frontend form uses
 interface PredictionRequest {
   LIMIT_BAL: number;
   SEX: number;       // 1 = Male, 2 = Female
@@ -29,12 +29,19 @@ interface PredictionRequest {
   PAY_AMT6: number;
 }
 
+// Update the result state to include the new explainability data
+interface PredictionResult {
+  default: boolean;
+  probability: number;
+  topFeatures: Record<string, number>;
+}
+
 export default function PredictTab() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ default: boolean; probability: number } | null>(null);
+  const [result, setResult] = useState<PredictionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Default values to make testing easier (these represent a typical user)
+  // Default values to make testing easier
   const [formData, setFormData] = useState<PredictionRequest>({
     LIMIT_BAL: 50000,
     SEX: 2,
@@ -62,21 +69,43 @@ export default function PredictTab() {
     setError(null);
     setResult(null);
 
+    // 1. Map the object to the exact array structure and order the backend expects!
+    const featureArray = [
+      formData.LIMIT_BAL, formData.SEX, formData.EDUCATION, formData.MARRIAGE, formData.AGE,
+      formData.PAY_0, formData.PAY_2, formData.PAY_3, formData.PAY_4, formData.PAY_5, formData.PAY_6,
+      formData.BILL_AMT1, formData.BILL_AMT2, formData.BILL_AMT3, formData.BILL_AMT4, formData.BILL_AMT5, formData.BILL_AMT6,
+      formData.PAY_AMT1, formData.PAY_AMT2, formData.PAY_AMT3, formData.PAY_AMT4, formData.PAY_AMT5, formData.PAY_AMT6
+    ];
+
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:10000';
+      
       const res = await fetch(`${apiUrl}/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        // 2. Wrap the array inside the 'features' key to satisfy Pydantic
+        body: JSON.stringify({
+          features: featureArray,
+          threshold: 0.4
+        }),
       });
 
-      if (!res.ok) throw new Error('Prediction failed. Is the API running?');
+      if (!res.ok) {
+        // Attempt to extract FastAPI validation errors to display them
+        const errData = await res.json().catch(() => null);
+        console.error("Backend Error Details:", errData);
+        throw new Error(errData?.detail ? JSON.stringify(errData.detail) : 'Prediction failed. Is the API running?');
+      }
 
       const data = await res.json();
+      
+      // 3. Match the backend's exact response property names
       setResult({
-        default: data.prediction === 1,
-        probability: data.probability,
+        default: data.risk_label === "HIGH RISK",
+        probability: data.risk_probability,
+        topFeatures: data.top_attention_features || {}
       });
+
     } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {
@@ -139,7 +168,7 @@ export default function PredictTab() {
             </div>
           </section>
 
-          {/* Section 2: Recent Payment Status (Sept to April) */}
+          {/* Section 2: Recent Payment Status */}
           <section className="bg-zinc-50 dark:bg-[#1c1b19] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
             <h3 className="text-lg font-semibold mb-4 border-b border-zinc-200 dark:border-zinc-800 pb-2">Repayment Status (Last 6 Months)</h3>
             <p className="text-xs text-zinc-500 mb-4">-1 = Pay duly, 1 = 1 month delay, 2 = 2 month delay, etc.</p>
@@ -178,13 +207,13 @@ export default function PredictTab() {
       {/* RIGHT COLUMN: The Result Panel */}
       <div className="lg:col-span-1">
         <div className="sticky top-6">
-          <h3 className="text-lg font-semibold mb-4">Analysis Result</h3>
+          <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">Analysis Result</h3>
 
           {/* Error State */}
           {error && (
             <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl border border-red-200 dark:border-red-800">
               <p className="text-sm font-medium">Prediction Error</p>
-              <p className="text-xs mt-1">{error}</p>
+              <p className="text-xs mt-1 break-words font-mono">{error}</p>
             </div>
           )}
 
@@ -207,13 +236,13 @@ export default function PredictTab() {
 
           {/* Result State */}
           {result && !loading && (
-            <div className={`p-6 rounded-xl border ${
+            <div className={`p-6 rounded-xl border shadow-lg ${
               result.default 
-                ? 'border-red-300 bg-red-50 dark:border-red-900/50 dark:bg-red-900/10' 
-                : 'border-green-300 bg-green-50 dark:border-green-900/50 dark:bg-green-900/10'
+                ? 'border-red-300 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20' 
+                : 'border-green-300 bg-green-50 dark:border-green-900/50 dark:bg-green-950/20'
             } animate-in slide-in-from-bottom-2 duration-300`}>
               
-              <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">Model Prediction</div>
+              <div className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Model Prediction</div>
               
               <div className={`text-2xl font-bold tracking-tight ${
                 result.default ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'
@@ -221,21 +250,43 @@ export default function PredictTab() {
                 {result.default ? 'High Default Risk' : 'Low Default Risk'}
               </div>
               
-              <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-800/50">
-                <div className="flex justify-between text-sm mb-1.5">
-                  <span className="text-zinc-600 dark:text-zinc-400">Probability of Default</span>
-                  <span className="font-medium">{(result.probability * 100).toFixed(1)}%</span>
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800/50">
+                <div className="flex justify-between text-sm mb-1.5 text-slate-900 dark:text-slate-200">
+                  <span className="font-medium">Probability of Default</span>
+                  <span className="font-bold">{(result.probability * 100).toFixed(1)}%</span>
                 </div>
                 
                 {/* Probability Progress Bar */}
-                <div className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
                   <div 
-                    className={`h-2.5 rounded-full ${result.default ? 'bg-red-500' : 'bg-green-500'}`} 
+                    className={`h-2.5 rounded-full transition-all duration-1000 ${result.default ? 'bg-red-500' : 'bg-green-500'}`} 
                     style={{ width: `${result.probability * 100}%` }}
                   ></div>
                 </div>
-                <p className="text-xs text-zinc-500 mt-2 text-right">Decision threshold: 40%</p>
+                <p className="text-xs text-slate-500 mt-2 text-right">Decision threshold: 40%</p>
               </div>
+
+              {/* Explainability Section */}
+              {Object.keys(result.topFeatures).length > 0 && (
+                <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800/50">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                    Top Driving Factors
+                  </p>
+                  <div className="space-y-2">
+                    {Object.entries(result.topFeatures).slice(0, 3).map(([feature, weight], idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-zinc-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">
+                          {feature}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          Weight: {(weight as number).toFixed(3)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
         </div>
