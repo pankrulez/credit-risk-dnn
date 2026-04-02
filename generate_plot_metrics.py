@@ -1,8 +1,6 @@
 import os
 import sys
 import json
-import glob
-import traceback
 import numpy as np
 import pandas as pd
 import torch
@@ -19,60 +17,57 @@ DEFAULT_CREDIT_FEATURES = [
     "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6"
 ]
 
-def get_fallback_metrics():
-    """Generates mathematically accurate synthetic metrics if real files are missing."""
-    print("⚠️ Using synthetic baseline metrics for plots...")
-    fpr = np.linspace(0, 1, 50)
-    tpr = 1 - (1 - fpr) ** 2.5
-    roc_data = [{"fpr": round(float(f), 3), "tpr": round(float(t), 3)} for f, t in zip(fpr, tpr)]
-
-    recall = np.linspace(0, 1, 50)
-    precision = 0.8 - 0.6 * (recall ** 1.5)
-    pr_data = [{"recall": round(float(r), 3), "precision": round(float(p), 3)} for r, p in zip(recall, precision)]
-
-    features = [
-        {"feature": "PAY_0", "weight": 0.28}, {"feature": "LIMIT_BAL", "weight": 0.18},
-        {"feature": "PAY_2", "weight": 0.12}, {"feature": "BILL_AMT1", "weight": 0.09},
-        {"feature": "PAY_AMT1", "weight": 0.07}, {"feature": "AGE", "weight": 0.05},
-        {"feature": "EDUCATION", "weight": 0.04}
-    ]
-
-    class_balance = [
-        {"name": "Low Risk (Paid)", "value": 23364, "fill": "#10b981"},
-        {"name": "High Risk (Default)", "value": 6636, "fill": "#ef4444"}
-    ]
-
-    education_data = [
-        {"level": "Grad School", "Paid": 8549, "Defaulted": 2036},
-        {"level": "University", "Paid": 10700, "Defaulted": 3330},
-        {"level": "High School", "Paid": 3680, "Defaulted": 1237},
-        {"level": "Others", "Paid": 435, "Defaulted": 33}
-    ]
-
-    return {
-        "roc_curve": roc_data, "pr_curve": pr_data, 
-        "feature_importance": features, "class_balance": class_balance, 
-        "education_data": education_data
-    }
-
 def try_generate_real_metrics():
     try:
         from src.model import CreditRiskDNN
         
-        # 1. Find the dataset
-        csv_files = glob.glob('**/*.csv', recursive=True)
-        data_path = next((f for f in csv_files if 'credit' in f.lower() or 'default' in f.lower()), None)
+        try:
+            from ucimlrepo import fetch_ucirepo
+        except ImportError:
+            raise ImportError("Please install ucimlrepo by running: pip install ucimlrepo")
+
+        # 1. Fetch data directly from UCI API (ID 350 is "Default of Credit Card Clients")
+        print("🌐 Fetching Taiwan Credit Card dataset from UCI API (ID: 350)...")
+        dataset = fetch_ucirepo(id=350)
         
-        if not data_path:
-            raise FileNotFoundError("Could not find a CSV dataset to evaluate.")
-            
-        print(f"📊 Found dataset at: {data_path}")
-        df = pd.read_csv(data_path)
+        if dataset.data is None or dataset.data.original is None:
+            raise ValueError("Failed to fetch complete data from UCI repository.")
         
-        # Determine target column (usually default.payment.next.month)
-        target_col = next((col for col in df.columns if 'default' in col.lower()), None)
-        if not target_col:
-            raise ValueError("Target column not found in CSV.")
+        # Grab the entire dataframe (features + targets + ids)
+        df = dataset.data.original.copy()
+        
+        # 2. Aggressive Column Standardization
+        df.columns = [str(c).upper().strip() for c in df.columns]
+        
+        # UCI often returns X1 through X23 for this specific dataset via the API
+        if 'X1' in df.columns and 'LIMIT_BAL' not in df.columns:
+            print("🔄 Remapping X1-X23 to actual feature names...")
+            x_mapping = {f"X{i+1}": feat for i, feat in enumerate(DEFAULT_CREDIT_FEATURES)}
+            df = df.rename(columns=x_mapping)
+
+        # Fix known typos from UCI
+        rename_map = {
+            'PAY_1': 'PAY_0',
+            'DEFAULT.PAYMENT.NEXT.MONTH': 'TARGET',
+            'DEFAULT PAYMENT NEXT MONTH': 'TARGET',
+            'Y': 'TARGET',
+            'BILL_AAMT1': 'BILL_AMT1'
+        }
+        df = df.rename(columns=rename_map)
+        
+        # If TARGET is still not found, assume the last column is the target
+        if 'TARGET' not in df.columns:
+            target_candidate = df.columns[-1]
+            df = df.rename(columns={target_candidate: 'TARGET'})
+
+        print(f"📊 Dataset loaded and standardized. Shape: {df.shape}")
+
+        # Ensure all required features exist
+        missing_cols = [col for col in DEFAULT_CREDIT_FEATURES if col not in df.columns]
+        if missing_cols:
+            raise KeyError(f"Missing required columns after standardization: {missing_cols}\nAvailable: {df.columns.tolist()}")
+
+        target_col = 'TARGET'
 
         # --- Data Demographics ---
         paid = int((df[target_col] == 0).sum())
@@ -92,7 +87,6 @@ def try_generate_real_metrics():
                     "Paid": int((df[mask][target_col] == 0).sum()),
                     "Defaulted": int((df[mask][target_col] == 1).sum())
                 })
-            # Combine others
             mask = ~df["EDUCATION"].isin([1, 2, 3])
             edu_data.append({
                 "level": "Others",
@@ -105,7 +99,7 @@ def try_generate_real_metrics():
         scaler_path = os.path.join("outputs", "scaler.pkl")
 
         if not os.path.exists(model_path) or not os.path.exists(scaler_path):
-            raise FileNotFoundError("Model or scaler not found in outputs/ directory.")
+            raise FileNotFoundError(f"Model or scaler not found in {os.path.abspath('outputs')}")
 
         print("🧠 Loading PyTorch Model and Scaler...")
         with open(scaler_path, "rb") as f:
@@ -114,56 +108,47 @@ def try_generate_real_metrics():
         model = CreditRiskDNN(n_features=len(DEFAULT_CREDIT_FEATURES), dropout=0.3)
         model.load_state_dict(torch.load(model_path, map_location="cpu"))
         model.eval()
+        torch.set_num_threads(1)
 
-        # Prepare features
-        X_raw = np.array(df[DEFAULT_CREDIT_FEATURES].values, dtype=float)
+        # Prepare strictly typed features
+        # Drop rows with NaN values in the required columns just in case
+        df = df.dropna(subset=DEFAULT_CREDIT_FEATURES + [target_col])
         
-        # Explicitly cast y_true to a standard numpy float array to fix strictly typed scikit-learn functions
+        X_raw = np.array(df[DEFAULT_CREDIT_FEATURES].values, dtype=float)
         y_true = np.array(df[target_col].values, dtype=float)
         
-        # Take a subset if data is huge to speed up script
         if len(X_raw) > 10000:
             np.random.seed(42)
             idx = np.random.choice(len(X_raw), 10000, replace=False)
             X_raw = X_raw[idx]
             y_true = y_true[idx]
 
-        # Ensure scaler inputs are standard floats
+        # Scale and convert to Tensor
         X_scaled = scaler.transform(X_raw)
         X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
 
         print("⚙️ Running model inference to calculate curves...")
         with torch.no_grad():
             logits, attn_weights = model(X_tensor)
-            
-            # Explicitly cast probs to standard numpy float array
             probs = np.array(torch.sigmoid(logits).squeeze().numpy(), dtype=float)
-            
-            # Calculate average attention weights across all samples
             avg_attn = np.array(attn_weights.squeeze().mean(dim=0).numpy(), dtype=float)
 
         # Calculate ROC using the strictly typed float arrays
         fpr, tpr, _ = roc_curve(y_true, probs)
-        
-        # Downsample the curve points for frontend performance
-        step_roc = max(1, len(fpr) // 50)
-        roc_data = [{"fpr": round(float(f), 3), "tpr": round(float(t), 3)} for f, t in zip(fpr[::step_roc], tpr[::step_roc])]
+        step_roc = max(1, len(fpr) // 80)
+        roc_data = [{"fpr": round(float(f), 4), "tpr": round(float(t), 4)} for f, t in zip(fpr[::step_roc], tpr[::step_roc])]
 
         # Calculate Precision-Recall
         precision, recall, _ = precision_recall_curve(y_true, probs)
-        
-        # Downsample the PR curve points
-        step_pr = max(1, len(recall) // 50)
-        pr_data = [{"recall": round(float(r), 3), "precision": round(float(p), 3)} for r, p in zip(recall[::step_pr], precision[::step_pr])]
-        pr_data.reverse() # Recharts prefers ascending X-axis
+        step_pr = max(1, len(recall) // 80)
+        pr_data = [{"recall": round(float(r), 4), "precision": round(float(p), 4)} for r, p in zip(recall[::step_pr], precision[::step_pr])]
+        pr_data.reverse()
 
         # Map attention weights to features
         feature_importance = [
             {"feature": feat, "weight": round(float(weight), 4)}
             for feat, weight in zip(DEFAULT_CREDIT_FEATURES, avg_attn)
         ]
-        
-        # Sort and take top 10 features
         feature_importance = sorted(feature_importance, key=lambda x: x["weight"], reverse=True)[:10]
 
         print("✅ Real metrics successfully extracted from model!")
@@ -176,9 +161,10 @@ def try_generate_real_metrics():
         }
 
     except Exception as e:
-        print(f"⚠️ Could not generate real metrics: {str(e)}")
-        # traceback.print_exc()
-        return get_fallback_metrics()
+        print(f"⚠️ Script failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 def main():
     output_dir = os.path.join("credit-risk-frontend", "public", "plots")
