@@ -8,8 +8,10 @@ import {
 
 export default function OverviewTab() {
   const [data, setData] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     fetch('/plots/metrics.json')
       .then(res => res.json())
       .then(json => setData(json))
@@ -40,15 +42,16 @@ export default function OverviewTab() {
   return (
     <div className="space-y-6 md:space-y-8">
       
-      <div className="mb-2 md:mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header - Immediate Entry */}
+      <div className={`mb-2 md:mb-6 transition-all duration-1000 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100">Dataset Overview</h2>
         <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-1">Exploring the 30,000 records from the Taiwan Credit Card dataset.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Class Balance Donut Chart (Staggered delay 1) */}
-        <div className="group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-300 flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150 fill-mode-both">
+        {/* Class Balance Donut Chart - Staggered 150ms */}
+        <div className={`group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-1000 delay-150 ease-out flex flex-col ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Class Balance</h3>
           <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Ratio of clients who paid vs defaulted.</p>
           <div className="flex-grow h-[250px] md:h-[300px] w-full">
@@ -66,8 +69,8 @@ export default function OverviewTab() {
           </div>
         </div>
 
-        {/* Education Demographics Bar Chart (Staggered delay 2) */}
-        <div className="group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-300 flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
+        {/* Education Demographics Bar Chart - Staggered 300ms */}
+        <div className={`group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-1000 delay-300 ease-out flex flex-col ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Default Rate by Education</h3>
           <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Breakdown of risk across education levels.</p>
           <div className="flex-grow h-[250px] md:h-[300px] w-full">
