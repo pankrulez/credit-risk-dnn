@@ -3,91 +3,93 @@
 import { useState, useEffect } from 'react';
 
 export default function PipelinePage() {
-  const [activeStep, setActiveStep] = useState<number | null>(null);
+  const [expandedStep, setExpandedStep] = useState<number | null>(1); // Step 1 open by default
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
   const steps = [
-    { id: 1, title: 'Data Ingestion', icon: '📥', desc: 'Raw credit card data (30k records) is fetched from the UCI ML Repository API.', details: 'Features include demographic info, payment history across 6 months, and bill amounts.', color: 'from-blue-500 to-cyan-500' },
-    { id: 2, title: 'Preprocessing & Scaling', icon: '⚙️', desc: 'StandardScaler normalizes the wide variance in financial amounts.', details: 'Limits and Bill Amounts are scaled so the Neural Network weights update evenly without exploding gradients.', color: 'from-cyan-500 to-teal-500' },
-    { id: 3, title: 'Attention Mechanism', icon: '🔍', desc: 'A custom PyTorch layer learns which features matter most.', details: 'This provides Local Explainability (XAI), allowing the model to highlight if recent late payments or total debt drove the decision.', color: 'from-teal-500 to-emerald-500' },
-    { id: 4, title: 'Deep Neural Network', icon: '🧠', desc: 'Multiple hidden layers with Dropout for regularization.', details: 'Extracts deep non-linear patterns from the credit behavior to accurately assess default risk.', color: 'from-emerald-500 to-green-500' },
-    { id: 5, title: 'Risk Prediction', icon: '🎯', desc: 'Sigmoid output yields a precise probability of default.', details: 'Thresholds are applied (e.g., >40% = High Risk) to trigger business logic or alerts.', color: 'from-green-500 to-lime-500' }
+    { 
+      id: 1, title: '1. Data Ingestion', icon: '📥', color: 'from-blue-500 to-cyan-500',
+      desc: 'Fetching 30,000 records from the UCI ML Repository.', 
+      details: 'The system pulls raw data containing 23 features per user. This includes demographic information (Age, Education, Gender), the history of past payments from April to September 2005, and the total billed amounts.' 
+    },
+    { 
+      id: 2, title: '2. Preprocessing & Scaling', icon: '⚙️', color: 'from-cyan-500 to-teal-500',
+      desc: 'Standardizing features to prevent exploding gradients.', 
+      details: 'Financial limits vary wildly (some people owe $100, others $500,000). We use scikit-learn\'s StandardScaler to compress these values into a tight mathematical range (usually -1 to 1). This ensures the Neural Network learns efficiently without being biased by massive numbers.' 
+    },
+    { 
+      id: 3, title: '3. Attention Mechanism (XAI)', icon: '🔍', color: 'from-teal-500 to-emerald-500',
+      desc: 'A custom layer that learns which features matter most.', 
+      details: 'Instead of a "black box," this PyTorch layer acts as a magnifying glass. It mathematically weighs each input, allowing us to see if a client was rejected because of their Age, or because they missed a payment exactly 2 months ago (Explainable AI).' 
+    },
+    { 
+      id: 4, title: '4. Deep Neural Network', icon: '🧠', color: 'from-emerald-500 to-green-500',
+      desc: 'Extracting complex, non-linear patterns from behavior.', 
+      details: 'The core brain. It features multiple hidden layers with ReLU activations and Dropout regularization. It looks at the combination of variables (e.g., High Debt + Low Education + Recent Missed Payment) to determine the true risk profile.' 
+    },
+    { 
+      id: 5, title: '5. Risk Prediction', icon: '🎯', color: 'from-green-500 to-lime-500',
+      desc: 'Final Sigmoid output yielding the probability of default.', 
+      details: 'The network outputs a single number between 0% and 100%. Based on business logic, we apply a threshold (e.g., >40%) to flag the user as "High Risk," triggering alerts for loan officers on the dashboard.' 
+    }
   ];
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto py-8">
+    <div className="space-y-8 max-w-3xl mx-auto py-8">
       
       <div className={`text-center mb-12 transition-all duration-1000 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-3">ML Architecture Pipeline</h2>
-        <p className="text-slate-600 dark:text-slate-400">Hover or click on a step to see how data transforms through the system.</p>
+        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-3">How It Works</h2>
+        <p className="text-slate-600 dark:text-slate-400">Click on any step below to explore the architecture of the machine learning pipeline.</p>
       </div>
 
-      <div className="relative">
-        <div className={`absolute left-[28px] md:left-1/2 top-8 bottom-8 w-1 bg-slate-200 dark:bg-slate-800 -translate-x-1/2 rounded-full transition-all duration-1000 delay-150 ${mounted ? 'opacity-100' : 'opacity-0'}`}></div>
+      <div className="space-y-4">
+        {steps.map((step, index) => {
+          const isExpanded = expandedStep === step.id;
+          const delay = 150 + (index * 100);
 
-        <div className="space-y-6">
-          {steps.map((step, index) => {
-            const isEven = index % 2 === 0;
-            const isActive = activeStep === step.id;
-            const delay = 200 + (index * 150);
-
-            return (
-              <div 
-                key={step.id}
-                className={`relative flex items-center md:justify-center w-full group cursor-pointer transition-all duration-1000 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
-                style={{ transitionDelay: `${mounted ? delay : 0}ms` }}
-                onMouseEnter={() => setActiveStep(step.id)}
-                onMouseLeave={() => setActiveStep(null)}
-              >
-                
-                {/* Desktop Left Side */}
-                <div className={`hidden md:block w-1/2 pr-12 text-right transition-all duration-300 ${!isEven ? 'opacity-0 translate-x-4 absolute' : isActive ? 'opacity-100 translate-x-0 text-teal-600 dark:text-teal-400' : 'opacity-70'}`}>
-                  <h3 className="text-lg font-bold">{step.title}</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{step.desc}</p>
-                </div>
-
-                {/* Node Icon */}
-                <div className={`relative z-10 flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br ${step.color} text-2xl text-white shadow-lg border-4 border-white dark:border-[#0a0a0a] transition-transform duration-300 ${isActive ? 'scale-125 shadow-teal-500/50' : 'scale-100 hover:scale-110'}`}>
-                  {step.icon}
-                </div>
-
-                {/* Desktop Right Side */}
-                <div className={`hidden md:block w-1/2 pl-12 text-left transition-all duration-300 ${isEven ? 'opacity-0 -translate-x-4 absolute' : isActive ? 'opacity-100 translate-x-0 text-teal-600 dark:text-teal-400' : 'opacity-70'}`}>
-                  <h3 className="text-lg font-bold">{step.title}</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{step.desc}</p>
-                </div>
-
-                {/* Mobile Content */}
-                <div className="md:hidden ml-6 w-full relative">
-                  {/* Glowing Background on hover */}
-                  <div className={`absolute -inset-0.5 bg-gradient-to-r ${step.color} rounded-2xl blur opacity-0 transition duration-500 ${isActive ? 'opacity-30' : ''}`}></div>
-                  <div className={`relative p-4 rounded-xl border transition-all duration-300 ${isActive ? 'bg-white dark:bg-zinc-800 border-teal-500 shadow-md' : 'bg-slate-50 dark:bg-zinc-900/50 border-slate-200 dark:border-slate-800'}`}>
-                    <h3 className={`text-base font-bold transition-colors ${isActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-900 dark:text-slate-100'}`}>{step.title}</h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{step.desc}</p>
+          return (
+            <div 
+              key={step.id}
+              onClick={() => setExpandedStep(isExpanded ? null : step.id)}
+              className={`relative group cursor-pointer transition-all duration-1000 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+              style={{ transitionDelay: `${mounted ? delay : 0}ms` }}
+            >
+              {/* Hover Glow */}
+              <div className={`absolute -inset-0.5 bg-gradient-to-r ${step.color} rounded-2xl blur transition duration-500 ${isExpanded ? 'opacity-30' : 'opacity-0 group-hover:opacity-15'}`}></div>
+              
+              {/* Card Content */}
+              <div className={`relative z-10 p-5 rounded-2xl border transition-all duration-300 ${isExpanded ? 'bg-white dark:bg-zinc-900 border-teal-500/50 shadow-md' : 'bg-slate-50 dark:bg-[#151515] border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'}`}>
+                <div className="flex items-center gap-4">
+                  <div className={`flex items-center justify-center shrink-0 w-12 h-12 rounded-full bg-gradient-to-br ${step.color} text-xl text-white shadow-md transition-transform duration-300 ${isExpanded ? 'scale-110' : ''}`}>
+                    {step.icon}
+                  </div>
+                  <div className="flex-grow">
+                    <h3 className={`text-lg font-bold transition-colors ${isExpanded ? 'text-teal-600 dark:text-teal-400' : 'text-slate-900 dark:text-slate-100'}`}>
+                      {step.title}
+                    </h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{step.desc}</p>
+                  </div>
+                  <div className="text-slate-400 dark:text-slate-600 font-bold text-xl">
+                    {isExpanded ? '−' : '+'}
                   </div>
                 </div>
 
+                {/* Expandable Details Section */}
+                <div className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-4' : 'grid-rows-[0fr] opacity-0'}`}>
+                  <div className="overflow-hidden">
+                    <div className="p-4 bg-slate-100 dark:bg-[#111] rounded-xl border border-slate-200 dark:border-zinc-800 text-sm md:text-base text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {step.details}
+                    </div>
+                  </div>
+                </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Detail Panel */}
-      <div className={`mt-12 relative group transition-all duration-1000 delay-[1000ms] ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
-        <div className={`absolute -inset-0.5 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-3xl blur transition-opacity duration-500 ${activeStep ? 'opacity-30 animate-gradient' : 'opacity-0'}`}></div>
-        <div className={`relative p-6 rounded-2xl border transition-all duration-500 ${activeStep ? 'bg-white dark:bg-zinc-900 border-teal-500/50 scale-100' : 'bg-slate-50 dark:bg-[#1c1b19] border-slate-200 dark:border-slate-800 scale-[0.98] opacity-70'}`}>
-          <h4 className="text-sm font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 mb-2">
-            {activeStep ? 'Deep Dive' : 'Select a step'}
-          </h4>
-          <p className="text-slate-700 dark:text-slate-300">
-            {activeStep ? steps.find(s => s.id === activeStep)?.details : 'Interact with the pipeline above to see detailed technical specifications.'}
-          </p>
-        </div>
+            </div>
+          );
+        })}
       </div>
-
     </div>
   );
 }
