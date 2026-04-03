@@ -42,7 +42,6 @@ export default function OverviewTab() {
   return (
     <div className="space-y-6 md:space-y-8">
       
-      {/* Header - Immediate Entry */}
       <div className={`mb-2 md:mb-6 transition-all duration-1000 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 dark:text-slate-100">Dataset Overview</h2>
         <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 mt-1">Exploring the 30,000 records from the Taiwan Credit Card dataset.</p>
@@ -50,41 +49,51 @@ export default function OverviewTab() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Class Balance Donut Chart - Staggered 150ms */}
-        <div className={`group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-1000 delay-150 ease-out flex flex-col ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
-          <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Class Balance</h3>
-          <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Ratio of clients who paid vs defaulted.</p>
-          <div className="flex-grow h-[250px] md:h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={data.class_balance} cx="50%" cy="50%" innerRadius="60%" outerRadius="80%" paddingAngle={5} dataKey="value">
-                  {data.class_balance.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} className="hover:opacity-80 transition-opacity duration-300 outline-none" />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-              </PieChart>
-            </ResponsiveContainer>
+        {/* Class Balance Donut Chart */}
+        <div className={`relative group transition-all duration-1000 delay-150 ease-out flex flex-col ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+          {/* THE GLOW EFFECT */}
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 rounded-[2rem] blur opacity-0 group-hover:opacity-30 transition duration-1000 animate-gradient z-0"></div>
+          
+          <div className="relative z-10 h-full bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col group-hover:-translate-y-1 transition-transform duration-300">
+            <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Class Balance</h3>
+            <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Ratio of clients who paid vs defaulted.</p>
+            <div className="flex-grow h-[250px] md:h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={data.class_balance} cx="50%" cy="50%" innerRadius="60%" outerRadius="80%" paddingAngle={5} dataKey="value">
+                    {data.class_balance.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} className="hover:opacity-80 transition-opacity duration-300 outline-none" />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
-        {/* Education Demographics Bar Chart - Staggered 300ms */}
-        <div className={`group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-1000 delay-300 ease-out flex flex-col ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
-          <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">Default Rate by Education</h3>
-          <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Breakdown of risk across education levels.</p>
-          <div className="flex-grow h-[250px] md:h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.education_data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} vertical={false} />
-                <XAxis dataKey="level" tick={{ fill: '#64748b', fontSize: 10 }} interval={0} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(100, 116, 139, 0.05)' }} />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="Paid" name="Low Risk (Paid)" fill="#10b981" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity duration-300" />
-                <Bar dataKey="Defaulted" name="High Risk (Default)" fill="#ef4444" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity duration-300" />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Education Demographics Bar Chart */}
+        <div className={`relative group transition-all duration-1000 delay-300 ease-out flex flex-col ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+          {/* THE GLOW EFFECT */}
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 rounded-[2rem] blur opacity-0 group-hover:opacity-30 transition duration-1000 animate-gradient z-0"></div>
+          
+          <div className="relative z-10 h-full bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col group-hover:-translate-y-1 transition-transform duration-300">
+            <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:text-rose-500 transition-colors">Default Rate by Education</h3>
+            <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-4">Breakdown of risk across education levels.</p>
+            <div className="flex-grow h-[250px] md:h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.education_data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} vertical={false} />
+                  <XAxis dataKey="level" tick={{ fill: '#64748b', fontSize: 10 }} interval={0} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(100, 116, 139, 0.05)' }} />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar dataKey="Paid" name="Low Risk (Paid)" fill="#10b981" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity duration-300" />
+                  <Bar dataKey="Defaulted" name="High Risk (Default)" fill="#ef4444" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity duration-300" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
