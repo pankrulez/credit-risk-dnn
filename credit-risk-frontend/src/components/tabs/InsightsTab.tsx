@@ -53,29 +53,69 @@ export default function InsightsTab() {
         <div className={`group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-1000 delay-150 ease-out flex flex-col ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 group-hover:text-teal-600 transition-colors">ROC Curve (AUC = 0.78)</h3>
           <div className="h-[250px] md:h-[300px] w-full flex-grow">
-            <ResponsiveContainer width="100%" height="100%" children={undefined}>
-              {/* Keep existing AreaChart code */}
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data.roc_curve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorTpr" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} vertical={false} />
+                <XAxis dataKey="fpr" tick={{ fill: '#64748b', fontSize: 11 }} type="number" domain={[0, 1]} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} domain={[0, 1]} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="tpr" name="True Positive Rate" stroke="#0d9488" strokeWidth={3} fillOpacity={1} fill="url(#colorTpr)" />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
+          <p className="text-[10px] md:text-xs font-semibold text-center text-slate-500 mt-3 uppercase tracking-wider">False Positive Rate</p>
         </div>
 
         {/* PR Curve Chart */}
         <div className={`group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 dark:hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-1000 delay-300 ease-out flex flex-col ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 group-hover:text-teal-600 transition-colors">Precision-Recall Curve</h3>
           <div className="h-[250px] md:h-[300px] w-full flex-grow">
-             <ResponsiveContainer width="100%" height="100%" children={undefined}>
-              {/* Keep existing AreaChart code */}
+             <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data.pr_curve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPrecision" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} vertical={false} />
+                <XAxis dataKey="recall" tick={{ fill: '#64748b', fontSize: 11 }} type="number" domain={[0, 1]} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} domain={[0, 1]} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="precision" name="Precision" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorPrecision)" />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
+          <p className="text-[10px] md:text-xs font-semibold text-center text-slate-500 mt-3 uppercase tracking-wider">Recall</p>
         </div>
       </div>
 
       {/* Feature Importance */}
       <div className={`group bg-white dark:bg-[#1c1b19] p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-1000 delay-500 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
         <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 group-hover:text-teal-600 transition-colors">Global Feature Importance (SHAP)</h3>
+        <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mb-6">Identifies which features have the strongest overall impact on the model's predictions.</p>
         <div className="h-[300px] md:h-[400px] w-full mt-4">
-           <ResponsiveContainer width="100%" height="100%" children={undefined}>
-              {/* Keep existing BarChart code */}
+           <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.feature_importance} layout="vertical" margin={{ top: 5, right: 10, left: 40, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} horizontal={true} vertical={false} />
+                <XAxis type="number" tick={{ fill: '#64748b', fontSize: 11 }} />
+                <YAxis type="category" dataKey="feature" tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} width={70} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(100, 116, 139, 0.05)' }} />
+                <Bar dataKey="weight" name="Impact Weight" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20}>
+                  {data.feature_importance.map((entry: any, index: number) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={index === 0 ? '#ef4444' : index === 1 ? '#f59e0b' : index === 2 ? '#10b981' : '#3b82f6'} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
            </ResponsiveContainer>
         </div>
       </div>

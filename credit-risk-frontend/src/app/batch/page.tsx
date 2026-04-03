@@ -1,14 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+import { useState, useEffect } from 'react';
+import { 
+  PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend 
+} from 'recharts';
 
 export default function BatchScoringPage() {
+  const [mounted, setMounted] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<any | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Generates 1000 rows of synthetic, plausible Taiwan Credit Data
   const handleDownloadTemplate = () => {
@@ -52,7 +60,7 @@ export default function BatchScoringPage() {
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       setFile(e.dataTransfer.files[0]);
-      setResults(null); // Reset previous results if new file dropped
+      setResults(null);
     }
   };
 
@@ -69,8 +77,8 @@ export default function BatchScoringPage() {
           clearInterval(interval);
           setIsProcessing(false);
           
-          // Generate simulated analysis based on the file size (assuming roughly ~1000 lines for the test file)
-          const rowCount = file.size > 100000 ? 1000 : Math.floor(Math.random() * 100) + 20;
+          // Generate simulated analysis based on the file size
+          const rowCount = file.size > 50000 ? 1000 : Math.floor(Math.random() * 100) + 20;
           const highRisk = Math.floor(rowCount * (Math.random() * 0.15 + 0.15)); // ~15-30% high risk
           const lowRisk = rowCount - highRisk;
 
@@ -79,7 +87,6 @@ export default function BatchScoringPage() {
             highRiskFound: highRisk,
             lowRiskFound: lowRisk,
             avgProbability: (Math.random() * 0.2 + 0.15).toFixed(2),
-            // Simulated distributions for the charts
             riskDistribution: [
               { name: 'Low Risk', value: lowRisk, fill: '#10b981' },
               { name: 'High Risk', value: highRisk, fill: '#ef4444' }
@@ -119,15 +126,15 @@ export default function BatchScoringPage() {
   };
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 max-w-[1200px] mx-auto py-2 md:py-4">
+    <div className="space-y-6 md:space-y-8 max-w-[1200px] mx-auto py-2 md:py-4">
       
-      {/* Header & Download Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-[#1c1b19] p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+      {/* Header */}
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-[#1c1b19] p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm transition-all duration-1000 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-slate-100">Batch Scoring</h2>
           <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm">Upload a CSV to score multiple clients simultaneously.</p>
         </div>
-        <button onClick={handleDownloadTemplate} className="w-full sm:w-auto px-5 py-3 md:py-2.5 text-sm font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 rounded-xl transition-colors border border-teal-200 dark:border-teal-800 flex items-center justify-center gap-2">
+        <button onClick={handleDownloadTemplate} className="w-full sm:w-auto px-5 py-3 md:py-2.5 text-sm font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 rounded-xl transition-colors border border-teal-200 dark:border-teal-800 flex items-center justify-center gap-2 hover:shadow-md hover:-translate-y-0.5">
           <span>📥</span> Download 1,000 Client CSV
         </button>
       </div>
@@ -136,14 +143,14 @@ export default function BatchScoringPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         
         {/* Left Col: Upload Zone */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className={`lg:col-span-1 space-y-6 transition-all duration-1000 delay-150 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           <div 
             onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-2xl md:rounded-3xl p-8 text-center transition-all duration-300 h-full flex flex-col justify-center items-center ${
-              isDragging ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/10 scale-[1.02]' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900'
+            className={`border-2 border-dashed rounded-2xl md:rounded-3xl p-8 text-center transition-all duration-300 h-full flex flex-col justify-center items-center group ${
+              isDragging ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/10 scale-[1.02]' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-zinc-900 hover:border-teal-400 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
             }`}
           >
-            <div className="text-5xl mb-4">{file ? '📄' : '☁️'}</div>
+            <div className="text-5xl mb-4 transition-transform duration-300 group-hover:scale-110">{file ? '📄' : '☁️'}</div>
             <h3 className="text-base font-bold text-slate-700 dark:text-slate-200 mb-2 truncate w-full px-2">
               {file ? file.name : 'Drag & Drop CSV'}
             </h3>
@@ -151,7 +158,7 @@ export default function BatchScoringPage() {
               {file ? `${(file.size / 1024).toFixed(1)} KB` : 'Standard UCI dataset format'}
             </p>
 
-            <label className="cursor-pointer px-6 py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-md transition-all text-sm w-full">
+            <label className="cursor-pointer px-6 py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-md transition-all text-sm w-full hover:-translate-y-0.5">
               Browse Files
               <input type="file" className="hidden" accept=".csv" onChange={(e) => { setFile(e.target.files?.[0] || null); setResults(null); }} />
             </label>
@@ -159,7 +166,9 @@ export default function BatchScoringPage() {
         </div>
 
         {/* Right Col: Processing / Summary Cards */}
-        <div className="lg:col-span-2">
+        <div className={`lg:col-span-2 transition-all duration-1000 delay-300 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+          
+          {/* Empty State */}
           {!file && !results && (
             <div className="h-full min-h-[250px] p-8 border border-dashed border-slate-300 dark:border-zinc-700 rounded-2xl md:rounded-3xl text-center text-slate-500 bg-slate-50/50 dark:bg-[#1c1b19] flex flex-col items-center justify-center">
               <div className="text-3xl mb-3 opacity-50">📊</div>
@@ -167,6 +176,7 @@ export default function BatchScoringPage() {
             </div>
           )}
 
+          {/* Processing State */}
           {file && !results && (
             <div className="h-full min-h-[250px] bg-white dark:bg-[#1c1b19] p-6 md:p-8 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center animate-in fade-in duration-300">
               {isProcessing ? (
@@ -189,58 +199,52 @@ export default function BatchScoringPage() {
           )}
 
           {/* Results Overview (Metrics) */}
-        {results && (
+          {results && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 h-full">
-            
-            {/* Card 1: Processed */}
-            <div className="group relative bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center text-center overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
+              
+              {/* Card 1: Processed */}
+              <div className="group relative bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center text-center overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-transparent dark:from-zinc-800/50 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider relative z-10">Processed</p>
                 <p className="text-4xl font-black text-slate-900 dark:text-white relative z-10">{results.totalProcessed}</p>
                 <p className="text-xs text-slate-400 mt-2 relative z-10">Rows analyzed</p>
-            </div>
+              </div>
 
-            {/* Card 2: High Risk (With Animated Gradient Glow) */}
-            <div className="group relative p-6 rounded-2xl md:rounded-3xl shadow-sm flex flex-col justify-center text-center overflow-hidden hover:-translate-y-1 hover:shadow-red-500/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
-                {/* The animated gradient background */}
+              {/* Card 2: High Risk */}
+              <div className="group relative p-6 rounded-2xl md:rounded-3xl shadow-sm flex flex-col justify-center text-center overflow-hidden hover:-translate-y-1 hover:shadow-red-500/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
                 <div className="absolute inset-0 bg-gradient-to-r from-red-100 via-rose-100 to-red-50 dark:from-red-950/40 dark:via-rose-900/30 dark:to-red-900/20 animate-gradient z-0"></div>
-                {/* Card border and structure */}
                 <div className="absolute inset-0 border border-red-200 dark:border-red-900/50 rounded-2xl md:rounded-3xl z-10"></div>
-                
                 <p className="text-red-600 dark:text-red-400 text-xs font-bold mb-1 uppercase tracking-wider relative z-20">High Risk</p>
                 <p className="text-4xl font-black text-red-700 dark:text-red-400 relative z-20">{results.highRiskFound}</p>
                 <p className="text-xs text-red-500 mt-2 relative z-20">{((results.highRiskFound / results.totalProcessed) * 100).toFixed(1)}% of total</p>
-            </div>
+              </div>
 
-            {/* Card 3: Avg Prob (With Animated Gradient Glow) */}
-            <div className="group relative p-6 rounded-2xl md:rounded-3xl shadow-sm flex flex-col justify-center text-center overflow-hidden hover:-translate-y-1 hover:shadow-teal-500/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both">
-                {/* The animated gradient background */}
+              {/* Card 3: Avg Prob */}
+              <div className="group relative p-6 rounded-2xl md:rounded-3xl shadow-sm flex flex-col justify-center text-center overflow-hidden hover:-translate-y-1 hover:shadow-teal-500/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both">
                 <div className="absolute inset-0 bg-gradient-to-r from-teal-50 via-emerald-100 to-teal-100 dark:from-teal-950/40 dark:via-emerald-900/20 dark:to-teal-900/30 animate-gradient z-0"></div>
-                {/* Card border and structure */}
                 <div className="absolute inset-0 border border-teal-200 dark:border-teal-900/50 rounded-2xl md:rounded-3xl z-10"></div>
-                
                 <p className="text-teal-700 dark:text-teal-400 text-xs font-bold mb-1 uppercase tracking-wider relative z-20">Avg Prob</p>
                 <p className="text-4xl font-black text-teal-800 dark:text-teal-300 relative z-20">{(results.avgProbability * 100).toFixed(1)}%</p>
                 <p className="text-xs text-teal-600 mt-2 relative z-20">Dataset average</p>
-            </div>
+              </div>
 
             </div>
-        )}
+          )}
         </div>
       </div>
 
       {/* Dynamic Results Charts (Only visible after processing) */}
       {results && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500 fill-mode-both">
           
-          <div className="bg-white dark:bg-[#1c1b19] p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
-            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4">Batch Risk Distribution</h3>
+          <div className="group bg-white dark:bg-[#1c1b19] p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-300">
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4 group-hover:text-teal-600 transition-colors">Batch Risk Distribution</h3>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={results.riskDistribution} cx="50%" cy="50%" innerRadius="60%" outerRadius="80%" paddingAngle={5} dataKey="value">
                     {results.riskDistribution.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                      <Cell key={`cell-${index}`} fill={entry.fill} className="hover:opacity-80 transition-opacity duration-300 outline-none" />
                     ))}
                   </Pie>
                   <RechartsTooltip content={<CustomTooltip />} />
@@ -250,8 +254,8 @@ export default function BatchScoringPage() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#1c1b19] p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
-            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4">Risk by Age Demographics</h3>
+          <div className="group bg-white dark:bg-[#1c1b19] p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-teal-500/30 hover:-translate-y-1 transition-all duration-300">
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4 group-hover:text-teal-600 transition-colors">Risk by Age Demographics</h3>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={results.ageDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -260,8 +264,8 @@ export default function BatchScoringPage() {
                   <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(100, 116, 139, 0.05)' }} />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="LowRisk" name="Low Risk" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
-                  <Bar dataKey="HighRisk" name="High Risk" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="LowRisk" name="Low Risk" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} className="hover:opacity-80 transition-opacity duration-300" />
+                  <Bar dataKey="HighRisk" name="High Risk" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity duration-300" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
