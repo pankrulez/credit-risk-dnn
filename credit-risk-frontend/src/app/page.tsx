@@ -2,21 +2,24 @@ import Link from 'next/link';
 
 export default function ProjectOverviewPage() {
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 ease-out">
+    <div className="space-y-12 max-w-5xl mx-auto py-8">
       
-      {/* Hero Section */}
-      <section className="text-center py-6 border-b border-slate-200 dark:border-slate-800">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight">
+      {/* Hero Section - Animates in immediately */}
+      <section className="text-center py-6 border-b border-slate-200 dark:border-slate-800 opacity-0 animate-slide-up-fade" style={{ animationDelay: '0ms' }}>
+        <div className="inline-block mb-4 px-3 py-1 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 text-xs font-bold tracking-widest uppercase border border-teal-200 dark:border-teal-800/50">
+          V1.0 Live
+        </div>
+        <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight">
           Credit Risk Analysis Dashboard
         </h2>
-        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+        <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed">
           An end-to-end Machine Learning pipeline designed to predict the probability of a client defaulting on their credit card payment next month.
         </p>
-        <div className="mt-8 flex justify-center gap-4">
-          <Link href="/predict" className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-md transition-all">
+        <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4 px-4 sm:px-0">
+          <Link href="/predict" className="px-8 py-3.5 bg-slate-900 hover:bg-black dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto text-center">
             Try the Model
           </Link>
-          <Link href="/insights" className="px-6 py-2.5 bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all">
+          <Link href="/insights" className="px-8 py-3.5 bg-white dark:bg-zinc-900 text-slate-700 dark:text-slate-300 font-bold rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-zinc-800 hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto text-center">
             View Analytics
           </Link>
         </div>
@@ -25,38 +28,58 @@ export default function ProjectOverviewPage() {
       {/* Grid: Context & Model */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
         
-        {/* Dataset Context */}
-        <div className="bg-slate-50 dark:bg-[#1c1b19] p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
-          <div className="text-4xl mb-4">🗄️</div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">The Dataset</h3>
-          <p className="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-            This project uses the famous <strong>Taiwan Credit Card Default Dataset (UCI ID: 350)</strong>. It contains data on 30,000 credit card clients in Taiwan from April 2005 to September 2005.
-          </p>
-          <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300 font-medium">
-            <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span> <strong>Total Records:</strong> 30,000</li>
-            <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span> <strong>Features:</strong> 23 (Demographics, Payment History, Bill Amounts)</li>
-            <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span> <strong>Target:</strong> Default Payment Next Month (Yes/No)</li>
-            <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span> <strong>Default Rate:</strong> ~22.1%</li>
-          </ul>
+        {/* Dataset Context Card - Delayed Animation */}
+        <div className="relative group opacity-0 animate-slide-up-fade" style={{ animationDelay: '200ms' }}>
+          
+          {/* Glowing Animated Gradient Background (Hidden until hover) */}
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-1000 group-hover:duration-200 bg-200% animate-pan-gradient"></div>
+          
+          {/* Actual Card Content */}
+          <div className="relative h-full bg-white dark:bg-[#151515] p-8 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm transition-transform duration-300">
+            <div className="w-14 h-14 bg-teal-50 dark:bg-teal-900/20 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-sm border border-teal-100 dark:border-teal-800/50">
+              🗄️
+            </div>
+            <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mb-4">The Dataset</h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+              This project uses the famous <strong className="text-slate-800 dark:text-slate-200">Taiwan Credit Card Default Dataset (UCI ID: 350)</strong>. It contains data on 30,000 credit card clients in Taiwan from April 2005 to September 2005.
+            </p>
+            <ul className="space-y-3 text-sm text-slate-700 dark:text-slate-300 font-medium">
+              <li className="flex items-start gap-3"><span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-1.5 shrink-0"></span> <span><strong>Total Records:</strong> 30,000</span></li>
+              <li className="flex items-start gap-3"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span> <span><strong>Features:</strong> 23 (Demographics, Payment History, Bill Amounts)</span></li>
+              <li className="flex items-start gap-3"><span className="w-1.5 h-1.5 rounded-full bg-cyan-500 mt-1.5 shrink-0"></span> <span><strong>Target:</strong> Default Payment Next Month (Yes/No)</span></li>
+              <li className="flex items-start gap-3"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></span> <span><strong>Default Rate:</strong> ~22.1%</span></li>
+            </ul>
+          </div>
         </div>
 
-        {/* Model Architecture */}
-        <div className="bg-slate-50 dark:bg-[#1c1b19] p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
-          <div className="text-4xl mb-4">🧠</div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">The Model</h3>
-          <p className="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-            A custom <strong>Deep Neural Network (DNN)</strong> built with PyTorch. It features a modern Attention Mechanism to provide explainability (XAI), allowing us to see <em>why</em> it makes a specific prediction.
-          </p>
-          <div className="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-            <div className="text-xs font-mono text-slate-500 dark:text-slate-400 mb-2">ARCHITECTURE</div>
-            <div className="flex flex-col gap-2 font-mono text-sm text-center">
-              <div className="bg-slate-100 dark:bg-zinc-800 py-1.5 rounded text-slate-700 dark:text-slate-300">Input Layer (23 Features)</div>
-              <div className="text-slate-400">↓</div>
-              <div className="bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 py-1.5 rounded border border-teal-200 dark:border-teal-800/50">Feature Attention Layer (XAI)</div>
-              <div className="text-slate-400">↓</div>
-              <div className="bg-slate-100 dark:bg-zinc-800 py-1.5 rounded text-slate-700 dark:text-slate-300">Dense Hidden Layers + Dropout</div>
-              <div className="text-slate-400">↓</div>
-              <div className="bg-slate-100 dark:bg-zinc-800 py-1.5 rounded text-slate-700 dark:text-slate-300">Sigmoid Output (Probability)</div>
+        {/* Model Architecture Card - Further Delayed Animation */}
+        <div className="relative group opacity-0 animate-slide-up-fade" style={{ animationDelay: '400ms' }}>
+          
+          {/* Glowing Animated Gradient Background (Hidden until hover) */}
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-1000 group-hover:duration-200 bg-200% animate-pan-gradient"></div>
+          
+          {/* Actual Card Content */}
+          <div className="relative h-full bg-white dark:bg-[#151515] p-8 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm transition-transform duration-300 flex flex-col">
+            <div className="w-14 h-14 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-sm border border-purple-100 dark:border-purple-800/50">
+              🧠
+            </div>
+            <h3 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 mb-4">The Model</h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+              A custom <strong className="text-slate-800 dark:text-slate-200">Deep Neural Network (DNN)</strong> built with PyTorch. It features a modern Attention Mechanism to provide explainability (XAI), allowing us to see exactly <em>why</em> it makes a specific prediction.
+            </p>
+            
+            {/* Embedded Pipeline Graphic */}
+            <div className="mt-auto p-5 bg-slate-50 dark:bg-[#111] border border-slate-200 dark:border-slate-800 rounded-2xl">
+              <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 mb-3 tracking-widest uppercase">Network Architecture</div>
+              <div className="flex flex-col gap-2.5 font-mono text-xs text-center font-semibold">
+                <div className="bg-white dark:bg-zinc-800 py-2 rounded-lg text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-zinc-700 shadow-sm">Input Layer (23 Features)</div>
+                <div className="text-slate-300 dark:text-slate-600">↓</div>
+                <div className="bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 py-2 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">Feature Attention Layer (XAI)</div>
+                <div className="text-slate-300 dark:text-slate-600">↓</div>
+                <div className="bg-white dark:bg-zinc-800 py-2 rounded-lg text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-zinc-700 shadow-sm">Dense Hidden Layers + Dropout</div>
+                <div className="text-slate-300 dark:text-slate-600">↓</div>
+                <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 py-2 rounded-lg border border-rose-200 dark:border-rose-800/50 shadow-sm">Sigmoid Output (Probability)</div>
+              </div>
             </div>
           </div>
         </div>
