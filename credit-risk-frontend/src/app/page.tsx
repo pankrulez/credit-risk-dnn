@@ -1,12 +1,22 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export default function ProjectOverviewPage() {
+  // Use state to trigger the mount animation
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <div className="space-y-12 max-w-5xl mx-auto py-8">
       
-      {/* Hero Section - Animates in immediately */}
-      <section className="text-center py-6 border-b border-slate-200 dark:border-slate-800 opacity-0 animate-slide-up-fade" style={{ animationDelay: '0ms' }}>
-        <div className="inline-block mb-4 px-3 py-1 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 text-xs font-bold tracking-widest uppercase border border-teal-200 dark:border-teal-800/50">
+      {/* Hero Section */}
+      <section className={`text-center py-6 border-b border-slate-200 dark:border-slate-800 transition-all duration-1000 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+        <div className="inline-block mb-4 px-3 py-1 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 text-xs font-bold tracking-widest uppercase border border-teal-200 dark:border-teal-800/50 shadow-sm">
           V1.0 Live
         </div>
         <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight">
@@ -29,10 +39,10 @@ export default function ProjectOverviewPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
         
         {/* Dataset Context Card - Delayed Animation */}
-        <div className="relative group opacity-0 animate-slide-up-fade" style={{ animationDelay: '200ms' }}>
+        <div className={`relative group transition-all duration-1000 delay-150 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           
           {/* Glowing Animated Gradient Background (Hidden until hover) */}
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-1000 group-hover:duration-200 bg-200% animate-pan-gradient"></div>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-1000 animate-gradient"></div>
           
           {/* Actual Card Content */}
           <div className="relative h-full bg-white dark:bg-[#151515] p-8 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm transition-transform duration-300">
@@ -53,10 +63,10 @@ export default function ProjectOverviewPage() {
         </div>
 
         {/* Model Architecture Card - Further Delayed Animation */}
-        <div className="relative group opacity-0 animate-slide-up-fade" style={{ animationDelay: '400ms' }}>
+        <div className={`relative group transition-all duration-1000 delay-300 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           
           {/* Glowing Animated Gradient Background (Hidden until hover) */}
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-1000 group-hover:duration-200 bg-200% animate-pan-gradient"></div>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 rounded-3xl blur opacity-0 group-hover:opacity-30 transition duration-1000 animate-gradient"></div>
           
           {/* Actual Card Content */}
           <div className="relative h-full bg-white dark:bg-[#151515] p-8 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm transition-transform duration-300 flex flex-col">
